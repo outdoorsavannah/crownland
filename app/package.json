@@ -1,0 +1,32 @@
+{
+  "name": "bc-crownland-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline-first BC Crown Land map (Capacitor, iOS + Android)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "gen:sample": "node scripts/gen-sample-data.mjs",
+    "cap:sync": "cap sync",
+    "cap:ios": "cap open ios",
+    "cap:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/filesystem": "^6.0.1",
+    "@capacitor/geolocation": "^6.0.1",
+    "@capacitor/ios": "^6.1.2",
+    "@capacitor/network": "^6.0.2",
+    "@capacitor/preferences": "^6.0.2",
+    "maplibre-gl": "^4.7.1",
+    "pmtiles": "^3.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "AllowedOrigins": [
+      "capacitor://localhost",
+      "https://localhost",
+      "http://localhost",
+      "http://localhost:5173"
+    ],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["Range", "Content-Type"],
+    "ExposeHeaders": ["Content-Range", "Content-Length", "Accept-Ranges", "ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]

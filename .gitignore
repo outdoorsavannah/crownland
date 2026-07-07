@@ -1,0 +1,39 @@
+# Node
+node_modules/
+app/dist/
+*.log
+
+# Vite
+.vite/
+
+# Local env (holds the R2 base URL); commit .env.example instead
+app/.env
+app/.env.local
+
+# Pipeline intermediates & outputs (multi-GB — never commit)
+pipeline/work/
+pipeline/out/
+# planetiler's downloaded sources + scratch (water polygons, natural earth, …)
+pipeline/data/
+
+# Generated sample data (rebuild with: npm run gen:sample)
+app/public/packs/
+app/public/fonts/
+
+# Capacitor native platforms.
+# ios/ IS committed — it holds Info.plist permission strings, signing, and app
+# config that must persist. Only its build artifacts / Pods are ignored.
+app/ios/App/Pods/
+app/ios/App/build/
+app/ios/App/App/public/
+app/ios/DerivedData/
+# android/ is generated on demand (`npx cap add android`); not committed yet.
+app/android/
+
+# Editor / OS
+.idea/
+.claude/
+.DS_Store
+
+# Planning doc — not part of the shipped repo
+bc-crownland-app-spec.md

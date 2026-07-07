@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>BC Crown Land</title>
+    <link rel="stylesheet" href="./src/ui/styles.css" />
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <!-- Top-right control stack -->
+    <div id="controls" class="control-stack">
+      <button id="btn-locate" class="ctrl-btn" title="Locate me" aria-label="Locate me">◎</button>
+      <button id="btn-layers" class="ctrl-btn" title="Layers" aria-label="Layers">▤</button>
+      <button id="btn-info" class="ctrl-btn" title="Info & attribution" aria-label="Info">ⓘ</button>
+    </div>
+
+    <!-- Coordinate readout (bottom-left) -->
+    <div id="coord-readout" class="coord-readout" hidden></div>
+
+    <!-- Panels / sheets are created dynamically by the UI modules -->
+    <div id="ui-root"></div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

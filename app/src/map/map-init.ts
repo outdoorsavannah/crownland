@@ -1,0 +1,63 @@
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { registerPmtilesProtocol } from "./pmtiles-protocol";
+import { buildStyle, LAYER_IDS } from "./style";
+import type { Pack } from "../data/manifest";
+import { assertOfflineStyle } from "../data/offline-guard";
+
+export interface MapHandle {
+  map: maplibregl.Map;
+  setCrownVisible(v: boolean): void;
+  setTenuresVisible(v: boolean): void;
+  setCrownOpacity(v: number): void;
+}
+
+export async function initMap(pack: Pack): Promise<MapHandle> {
+  registerPmtilesProtocol();
+
+  const style = await buildStyle(pack);
+  // Spec §10: guard that no source points at a remote URL before we hand the
+  // style to MapLibre.
+  assertOfflineStyle(style);
+
+  const map = new maplibregl.Map({
+    container: "map",
+    style,
+    center: [(pack.bbox[0] + pack.bbox[2]) / 2, (pack.bbox[1] + pack.bbox[3]) / 2],
+    zoom: 8,
+    maxZoom: 16,
+    attributionControl: false,
+    dragRotate: false,
+    pitchWithRotate: false,
+  });
+
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
+  map.touchZoomRotate.disableRotation();
+
+  await new Promise<void>((resolve) => map.on("load", () => resolve()));
+
+  // Fit to the pack's bounds once loaded.
+  map.fitBounds(pack.bbox, { padding: 24, animate: false });
+
+  const setVisible = (ids: string[], v: boolean) => {
+    for (const id of ids) {
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, "visibility", v ? "visible" : "none");
+      }
+    }
+  };
+
+  return {
+    map,
+    setCrownVisible: (v) => setVisible([LAYER_IDS.crownFill, LAYER_IDS.crownLine], v),
+    setTenuresVisible: (v) => setVisible([LAYER_IDS.tenureLine], v),
+    setCrownOpacity: (v) => {
+      if (map.getLayer(LAYER_IDS.crownFill)) {
+        map.setPaintProperty(LAYER_IDS.crownFill, "fill-opacity", v);
+      }
+      if (map.getLayer(LAYER_IDS.crownLine)) {
+        map.setPaintProperty(LAYER_IDS.crownLine, "line-opacity", Math.min(1, v + 0.2));
+      }
+    },
+  };
+}
