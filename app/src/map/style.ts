@@ -23,7 +23,14 @@ export const LAYER_IDS = {
   oldGrowthLine: "oldgrowth-outline",
   oldGrowthNlFill: "oldgrowth-nl-fill",
   oldGrowthNlLine: "oldgrowth-nl-outline",
+  bigTrees: "bigtrees-point",
+  bigTreeLabels: "bigtrees-label",
 } as const;
+
+// Big trees ship as a bundled, always-on point layer (BC BigTree Registry,
+// UBC). The file lives in the app bundle (public/packs), so it is resolved
+// locally on every pack regardless of the manifest.
+const BIGTREES_FILE = "bigtrees.pmtiles";
 
 export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
   const basemap = pack.archives.basemap;
@@ -72,6 +79,11 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
       url: `pmtiles://${await archiveUrl(oldgrowth.file, oldgrowth.bundled)}`,
     };
   }
+  // Big trees: always available (bundled in the app), independent of the pack.
+  sources.bigtrees = {
+    type: "vector",
+    url: `pmtiles://${await archiveUrl(BIGTREES_FILE, true)}`,
+  };
 
   const layers: StyleSpecification["layers"] = [
     {
@@ -369,6 +381,57 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
       },
     });
   }
+
+  // ---- Big trees (BC BigTree Registry) — bundled point layer, always on top ----
+  layers.push(
+    {
+      id: LAYER_IDS.bigTrees,
+      type: "circle",
+      source: "bigtrees",
+      "source-layer": "bigtrees",
+      paint: {
+        // Radius grows with zoom and with the tree's BC BigTree score.
+        "circle-radius": [
+          "interpolate", ["linear"], ["zoom"],
+          4, 2.2,
+          9, ["interpolate", ["linear"], ["coalesce", ["get", "score"], 150], 100, 3, 450, 6],
+          14, ["interpolate", ["linear"], ["coalesce", ["get", "score"], 150], 100, 5, 450, 13],
+        ],
+        "circle-color": "#b5651d",
+        "circle-opacity": 0.9,
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 1.5,
+      },
+    },
+    {
+      id: LAYER_IDS.bigTreeLabels,
+      type: "symbol",
+      source: "bigtrees",
+      "source-layer": "bigtrees",
+      minzoom: 11,
+      // Label by trunk diameter (DBH) — recorded for ~99.6% of trees, far more
+      // than height. "ø" marks it as a diameter; the tap sheet has full stats.
+      filter: ["has", "dbh_m"],
+      layout: {
+        "text-field": [
+          "concat",
+          "ø ",
+          ["to-string", ["/", ["round", ["*", ["get", "dbh_m"], 10]], 10]],
+          " m",
+        ],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 11,
+        "text-offset": [0, 1.1],
+        "text-anchor": "top",
+        "text-optional": true,
+      },
+      paint: {
+        "text-color": "#6b3f16",
+        "text-halo-color": "#f5f1e6",
+        "text-halo-width": 1.4,
+      },
+    },
+  );
 
   return {
     version: 8,

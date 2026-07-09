@@ -30,6 +30,16 @@ export function openInfoPanel(manifest: Manifest, onSwitchPacks?: () => void): v
     p(manifest.attribution.ogl),
     p(manifest.attribution.osm),
     p(
+      "Big trees: BC BigTree Registry, UBC Faculty of Forestry " +
+        "(bigtrees.forestry.ubc.ca). Point locations shown with attribution; some " +
+        "registry trees have withheld locations and are not shown.",
+    ),
+    p(
+      "Please protect these trees: stay on established trails, keep off the root " +
+        "zone, and take only photos. Many are old-growth giants that damage easily.",
+      "note",
+    ),
+    p(
       "Disclaimer: This map is for reference only and is NOT authoritative for " +
         "legal boundaries. Do not rely on it to determine land ownership, tenure, " +
         "or access rights. Verify with official BC government sources.",

@@ -10,6 +10,7 @@ interface LayerPrefs {
   tenures: boolean;
   oldgrowth: boolean;
   oldgrowthNonLegal: boolean;
+  bigtrees: boolean;
   opacity: number;
 }
 
@@ -19,6 +20,7 @@ const DEFAULTS: LayerPrefs = {
   tenures: true,
   oldgrowth: true,
   oldgrowthNonLegal: true,
+  bigtrees: true,
   opacity: 0.35,
 };
 
@@ -41,6 +43,7 @@ export function applyLayerPrefs(handle: MapHandle, prefs: LayerPrefs): void {
   handle.setTenuresVisible(prefs.tenures);
   handle.setOldGrowthVisible(prefs.oldgrowth);
   handle.setOldGrowthNonLegalVisible(prefs.oldgrowthNonLegal);
+  handle.setBigTreesVisible(prefs.bigtrees);
   handle.setCrownOpacity(prefs.opacity);
 }
 
@@ -88,6 +91,11 @@ export function openLayerControls(handle: MapHandle, prefs: LayerPrefs): void {
     toggleRow("Old growth — proposed", prefs.oldgrowthNonLegal, (v) => {
       prefs.oldgrowthNonLegal = v;
       handle.setOldGrowthNonLegalVisible(v);
+      void save(prefs);
+    }),
+    toggleRow("Big trees (registry)", prefs.bigtrees, (v) => {
+      prefs.bigtrees = v;
+      handle.setBigTreesVisible(v);
       void save(prefs);
     }),
   );

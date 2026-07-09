@@ -16,8 +16,10 @@ pipeline/out/
 # planetiler's downloaded sources + scratch (water polygons, natural earth, …)
 pipeline/data/
 
-# Generated sample data (rebuild with: npm run gen:sample)
-app/public/packs/
+# Generated sample data (rebuild with: npm run gen:sample) — but the real,
+# shipped big-trees layer IS committed (built from a UBC xlsx not in the repo).
+app/public/packs/*
+!app/public/packs/bigtrees.pmtiles
 app/public/fonts/
 
 # Capacitor native platforms.

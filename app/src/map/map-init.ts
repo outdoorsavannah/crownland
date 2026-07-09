@@ -11,6 +11,7 @@ export interface MapHandle {
   setTenuresVisible(v: boolean): void;
   setOldGrowthVisible(v: boolean): void;
   setOldGrowthNonLegalVisible(v: boolean): void;
+  setBigTreesVisible(v: boolean): void;
   setCrownOpacity(v: number): void;
 }
 
@@ -59,6 +60,7 @@ export async function initMap(pack: Pack): Promise<MapHandle> {
       setVisible([LAYER_IDS.oldGrowthFill, LAYER_IDS.oldGrowthLine], v),
     setOldGrowthNonLegalVisible: (v) =>
       setVisible([LAYER_IDS.oldGrowthNlFill, LAYER_IDS.oldGrowthNlLine], v),
+    setBigTreesVisible: (v) => setVisible([LAYER_IDS.bigTrees, LAYER_IDS.bigTreeLabels], v),
     setCrownOpacity: (v) => {
       if (map.getLayer(LAYER_IDS.crownFill)) {
         map.setPaintProperty(LAYER_IDS.crownFill, "fill-opacity", v);

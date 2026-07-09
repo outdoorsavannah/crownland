@@ -29,6 +29,18 @@ const PREFERRED: Record<string, string> = {
   ORIGINAL_DECISION_DATE: "Decision date",
   ENABLING_DOCUMENT_TITLE: "Enabling document",
   FEATURE_AREA_SQM: "Area (m²)",
+  // BC BigTree Registry fields.
+  species: "Species",
+  nickname: "Nickname",
+  score: "BC BigTree score",
+  height_m: "Height (m)",
+  dbh_m: "Diameter DBH (m)",
+  crown_m: "Crown spread (m)",
+  town: "Nearest town",
+  ownership: "Ownership",
+  elevation_m: "Elevation (m)",
+  measured: "Last measured",
+  id: "Registry ID",
 };
 
 function attributeRows(props: Record<string, unknown>): [string, string][] {
@@ -53,16 +65,23 @@ export function showFeatureSheet(
   lngLat: { lng: number; lat: number },
   onClose?: () => void,
 ): void {
-  const kind =
-    feature.source === "tenures"
-      ? "Crown Tenure"
-      : feature.source === "oldgrowth"
-        ? feature.sourceLayer === "oldgrowth_nonlegal"
-          ? "Proposed OGMA (non-legal)"
-          : "Old Growth Management Area"
-        : "Crown Land";
-  const sheet = openSheet(kind, onClose);
   const props = (feature.properties ?? {}) as Record<string, unknown>;
+  let kind: string;
+  if (feature.source === "tenures") {
+    kind = "Crown Tenure";
+  } else if (feature.source === "bigtrees") {
+    const nick = props.nickname ? String(props.nickname) : "";
+    const species = props.species ? String(props.species) : "Big tree";
+    kind = nick ? `${nick} (${species})` : species;
+  } else if (feature.source === "oldgrowth") {
+    kind =
+      feature.sourceLayer === "oldgrowth_nonlegal"
+        ? "Proposed OGMA (non-legal)"
+        : "Old Growth Management Area";
+  } else {
+    kind = "Crown Land";
+  }
+  const sheet = openSheet(kind, onClose);
 
   const rows = attributeRows(props);
   sheet.body.append(

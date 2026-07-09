@@ -278,6 +278,7 @@ function wireLocate(handle: MapHandle): void {
 function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
   const { map } = handle;
   const queryLayers = [
+    LAYER_IDS.bigTrees,
     LAYER_IDS.tenureLine,
     LAYER_IDS.oldGrowthFill,
     LAYER_IDS.oldGrowthNlFill,
@@ -299,9 +300,10 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
     tapMarker = new maplibregl.Marker({ element: el, anchor: "bottom" })
       .setLngLat(e.lngLat)
       .addTo(map);
-    // Prefer the most specific feature: tenure, then old-growth reserve, then
-    // the crown parcel underneath.
+    // Prefer the most specific feature: a big-tree point, then tenure, then
+    // old-growth reserve, then the crown parcel underneath.
     const preferred =
+      feats.find((f) => f.source === "bigtrees") ??
       feats.find((f) => f.source === "tenures") ??
       feats.find((f) => f.source === "oldgrowth") ??
       feats[0];

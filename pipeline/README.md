@@ -45,6 +45,10 @@ cd pipeline
 ./04_basemap.sh                    # planetiler -> out/basemap-bc.pmtiles
 ./05_style_manifest.sh             # sizes + fonts + out/manifest.json
 
+# Optional: big-trees point layer (needs a manually-downloaded UBC xlsx; writes
+# straight into the app bundle as a committed, always-on layer — not a pack).
+BIGTREES_XLSX=/path/to/BCBT_conifers.xlsx ./08_bigtrees.sh
+
 # or:
 ./run_all.sh
 ```
