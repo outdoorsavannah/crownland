@@ -12,21 +12,26 @@ import type { Pack } from "../data/manifest";
 //                       transportation, place). We reference a lean subset.
 //   crown-*.pmtiles   : single source-layer "crown".
 //   tenures-*.pmtiles : single source-layer "tenures".
+//   oldgrowth-*.pmtiles : single source-layer "oldgrowth" (OGMA legal reserves).
 
 export const LAYER_IDS = {
   crownFill: "crown-fill",
   crownLine: "crown-outline",
   tenureLine: "tenure-outline",
+  oldGrowthFill: "oldgrowth-fill",
+  oldGrowthLine: "oldgrowth-outline",
 } as const;
 
 export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
   const basemap = pack.archives.basemap;
   const crown = pack.archives.crown;
   const tenures = pack.archives.tenures;
+  const oldgrowth = pack.archives.oldgrowth;
   const terrain = pack.archives.terrain;
   const basemapFile = basemap?.file;
   const crownFile = crown?.file;
   const tenuresFile = tenures?.file;
+  const oldgrowthFile = oldgrowth?.file;
 
   const sources: StyleSpecification["sources"] = {};
 
@@ -56,6 +61,12 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
     sources.tenures = {
       type: "vector",
       url: `pmtiles://${await archiveUrl(tenures.file, tenures.bundled)}`,
+    };
+  }
+  if (oldgrowth) {
+    sources.oldgrowth = {
+      type: "vector",
+      url: `pmtiles://${await archiveUrl(oldgrowth.file, oldgrowth.bundled)}`,
     };
   }
 
@@ -285,6 +296,34 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
           "line-color": "#1f6e2f",
           "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.4, 14, 1.0],
           "line-opacity": 0.7,
+        },
+      },
+    );
+  }
+
+  if (oldgrowthFile) {
+    layers.push(
+      {
+        // Old Growth Management Areas (OGMA legal). Purple, distinct from the
+        // crown green, semi-transparent so crown/basemap read underneath.
+        id: LAYER_IDS.oldGrowthFill,
+        type: "fill",
+        source: "oldgrowth",
+        "source-layer": "oldgrowth",
+        paint: {
+          "fill-color": "#7a4fb0",
+          "fill-opacity": 0.35,
+        },
+      },
+      {
+        id: LAYER_IDS.oldGrowthLine,
+        type: "line",
+        source: "oldgrowth",
+        "source-layer": "oldgrowth",
+        paint: {
+          "line-color": "#553a80",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.4, 14, 1.2],
+          "line-opacity": 0.8,
         },
       },
     );

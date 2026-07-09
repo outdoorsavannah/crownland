@@ -117,9 +117,11 @@ function wireControls(
 
 function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
   const { map } = handle;
-  const queryLayers = [LAYER_IDS.tenureLine, LAYER_IDS.crownFill].filter((id) =>
-    map.getLayer(id),
-  );
+  const queryLayers = [
+    LAYER_IDS.tenureLine,
+    LAYER_IDS.oldGrowthFill,
+    LAYER_IDS.crownFill,
+  ].filter((id) => map.getLayer(id));
 
   // Tap → drop a marker at the tap point + feature attributes + coordinates
   // (spec §9, acceptance #2). Prefer a tenure feature over the crown parcel
@@ -136,8 +138,13 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
     tapMarker = new maplibregl.Marker({ element: el, anchor: "bottom" })
       .setLngLat(e.lngLat)
       .addTo(map);
-    const tenure = feats.find((f) => f.source === "tenures");
-    showFeatureSheet(tenure ?? feats[0], e.lngLat, () => {
+    // Prefer the most specific feature: tenure, then old-growth reserve, then
+    // the crown parcel underneath.
+    const preferred =
+      feats.find((f) => f.source === "tenures") ??
+      feats.find((f) => f.source === "oldgrowth") ??
+      feats[0];
+    showFeatureSheet(preferred, e.lngLat, () => {
       tapMarker?.remove();
       tapMarker = null;
     });

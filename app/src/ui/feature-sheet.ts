@@ -20,6 +20,13 @@ const PREFERRED: Record<string, string> = {
   TENURE_AREA_IN_HECTARES: "Area (ha)",
   AREA_HA: "Area (ha)",
   INTRID_SID: "Interest ID",
+  // OGMA legal (old growth) fields.
+  OGMA_TYPE: "OGMA type",
+  OGMA_PRIMARY_REASON: "Primary reason",
+  LEGAL_OGMA_PROVID: "OGMA ID",
+  LEGALIZATION_FRPA_DATE: "Legalized (FRPA)",
+  ENABLING_DOCUMENT_TITLE: "Enabling document",
+  FEATURE_AREA_SQM: "Area (m²)",
 };
 
 function attributeRows(props: Record<string, unknown>): [string, string][] {
@@ -44,8 +51,12 @@ export function showFeatureSheet(
   lngLat: { lng: number; lat: number },
   onClose?: () => void,
 ): void {
-  const isTenure = feature.source === "tenures";
-  const kind = isTenure ? "Crown Tenure" : "Crown Land";
+  const kind =
+    feature.source === "tenures"
+      ? "Crown Tenure"
+      : feature.source === "oldgrowth"
+        ? "Old Growth Management Area"
+        : "Crown Land";
   const sheet = openSheet(kind, onClose);
   const props = (feature.properties ?? {}) as Record<string, unknown>;
 

@@ -36,10 +36,11 @@ for row in "${REGIONS[@]}"; do
   read -r id w s e n <<< "$row"
   bbox="$w,$s,$e,$n"
   log "Region $id ($bbox)"
-  extract "$OUT_DIR/basemap-bc.pmtiles" "$REGIONS_DIR/basemap-$id.pmtiles" "$bbox"
-  extract "$OUT_DIR/crown-bc.pmtiles"   "$REGIONS_DIR/crown-$id.pmtiles"   "$bbox"
-  extract "$OUT_DIR/tenures-bc.pmtiles" "$REGIONS_DIR/tenures-$id.pmtiles" "$bbox"
-  extract "$OUT_DIR/terrain-bc.pmtiles" "$REGIONS_DIR/terrain-$id.pmtiles" "$bbox"
+  extract "$OUT_DIR/basemap-bc.pmtiles"   "$REGIONS_DIR/basemap-$id.pmtiles"   "$bbox"
+  extract "$OUT_DIR/crown-bc.pmtiles"     "$REGIONS_DIR/crown-$id.pmtiles"     "$bbox"
+  extract "$OUT_DIR/tenures-bc.pmtiles"   "$REGIONS_DIR/tenures-$id.pmtiles"   "$bbox"
+  extract "$OUT_DIR/oldgrowth-bc.pmtiles" "$REGIONS_DIR/oldgrowth-$id.pmtiles" "$bbox"
+  extract "$OUT_DIR/terrain-bc.pmtiles"   "$REGIONS_DIR/terrain-$id.pmtiles"   "$bbox"
 done
 
 log "Region packs written to $REGIONS_DIR"

@@ -8,11 +8,12 @@ import { Preferences } from "@capacitor/preferences";
 interface LayerPrefs {
   crown: boolean;
   tenures: boolean;
+  oldgrowth: boolean;
   opacity: number;
 }
 
 const KEY = "layer-prefs";
-const DEFAULTS: LayerPrefs = { crown: true, tenures: true, opacity: 0.35 };
+const DEFAULTS: LayerPrefs = { crown: true, tenures: true, oldgrowth: true, opacity: 0.35 };
 
 export async function loadLayerPrefs(): Promise<LayerPrefs> {
   const { value } = await Preferences.get({ key: KEY });
@@ -31,6 +32,7 @@ async function save(prefs: LayerPrefs): Promise<void> {
 export function applyLayerPrefs(handle: MapHandle, prefs: LayerPrefs): void {
   handle.setCrownVisible(prefs.crown);
   handle.setTenuresVisible(prefs.tenures);
+  handle.setOldGrowthVisible(prefs.oldgrowth);
   handle.setCrownOpacity(prefs.opacity);
 }
 
@@ -68,6 +70,11 @@ export function openLayerControls(handle: MapHandle, prefs: LayerPrefs): void {
     toggleRow("Tenures", prefs.tenures, (v) => {
       prefs.tenures = v;
       handle.setTenuresVisible(v);
+      void save(prefs);
+    }),
+    toggleRow("Old growth (OGMA)", prefs.oldgrowth, (v) => {
+      prefs.oldgrowth = v;
+      handle.setOldGrowthVisible(v);
       void save(prefs);
     }),
   );

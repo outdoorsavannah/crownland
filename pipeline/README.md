@@ -1,8 +1,15 @@
 # Data build pipeline (workstation only)
 
 Produces the offline map artifacts the app ships:
-`crown-bc.pmtiles`, `tenures-bc.pmtiles`, `basemap-bc.pmtiles`, and a hosting
-`manifest.json`. **This never runs on device** (spec §4).
+`crown-bc.pmtiles`, `tenures-bc.pmtiles`, `oldgrowth-bc.pmtiles`,
+`basemap-bc.pmtiles`, and a hosting `manifest.json`. **This never runs on device**
+(spec §4).
+
+> ℹ️ The old-growth overlay is **Old Growth Management Areas** (legal, current),
+> which is Open Government Licence – BC and therefore redistributable. The Old
+> Growth Strategic Review "TAP" datasets (priority deferral / ancient forest /
+> big-treed) are licensed **"Access Only"** — reproduction needs written BC
+> permission — so they are deliberately not bundled.
 
 > ⚠️ These jobs download **multiple GB** (ParcelMap BC parcel fabric + the BC
 > OpenStreetMap extract) and need lots of disk, RAM, and time. Run on a
@@ -13,11 +20,11 @@ Produces the offline map artifacts the app ships:
 | Tool | Install (macOS) | Used by |
 |------|-----------------|---------|
 | GDAL (`ogr2ogr`, `ogrinfo`) | `brew install gdal` | crown filter/reproject |
-| tippecanoe | `brew install tippecanoe` | crown + tenure tiling |
+| tippecanoe | `brew install tippecanoe` | crown + tenure + old-growth tiling |
 | pmtiles CLI | `brew install pmtiles` | inspection / verification |
 | Java 21+ | `brew install temurin` | planetiler (basemap) |
 | planetiler.jar | auto-downloaded by `04_basemap.sh` | basemap |
-| Python 3 | preinstalled / `brew install python` | tenure paging + manifest |
+| Python 3 | preinstalled / `brew install python` | WFS paging + manifest |
 
 ## Run order
 
@@ -32,6 +39,7 @@ cd pipeline
 ./01_fetch_and_filter_crown.sh     # download + filter crown -> work/crown.fgb
 ./02_tile_crown.sh                 # -> out/crown-bc.pmtiles
 ./03_fetch_tile_tenures.sh         # paged WFS -> out/tenures-bc.pmtiles
+./07_fetch_tile_oldgrowth.sh       # paged WFS (OGMA) -> out/oldgrowth-bc.pmtiles
 ./04_basemap.sh                    # planetiler -> out/basemap-bc.pmtiles
 ./05_style_manifest.sh             # sizes + fonts + out/manifest.json
 

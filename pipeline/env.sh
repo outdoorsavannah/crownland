@@ -13,6 +13,8 @@ export CROWN_MINZOOM="${CROWN_MINZOOM:-5}"
 export CROWN_MAXZOOM="${CROWN_MAXZOOM:-14}"
 export TENURE_MINZOOM="${TENURE_MINZOOM:-6}"
 export TENURE_MAXZOOM="${TENURE_MAXZOOM:-14}"
+export OLDGROWTH_MINZOOM="${OLDGROWTH_MINZOOM:-5}"
+export OLDGROWTH_MAXZOOM="${OLDGROWTH_MAXZOOM:-14}"
 export BASEMAP_MINZOOM="${BASEMAP_MINZOOM:-0}"
 export BASEMAP_MAXZOOM="${BASEMAP_MAXZOOM:-14}"
 
@@ -24,6 +26,13 @@ export PLANETILER_XMX="${PLANETILER_XMX:-2g}"
 export PARCEL_FABRIC_URL="https://pub.data.gov.bc.ca/datasets/4cf233c2-f020-4f7a-9b87-1923252fbc24/pmbc_parcel_fabric_poly_svw.zip"
 export TENURES_WFS_BASE="https://openmaps.gov.bc.ca/geo/pub/WHSE_TANTALIS.TA_CROWN_TENURES_SVW/ows"
 export OSM_PBF_URL="https://download.geofabrik.de/north-america/canada/british-columbia-latest.osm.pbf"
+
+# Old-growth overlay = Old Growth Management Areas (legal, current). This is the
+# OPEN (OGL-BC) old-growth layer, so it can be tiled, hosted and bundled like
+# crown/tenures. NOTE: the Old Growth Strategic Review "TAP" datasets (priority
+# deferral / ancient forest / big-treed) are licensed "Access Only" — reproduction
+# needs written BC permission — so they are deliberately NOT used here.
+export OGMA_WFS_BASE="${OGMA_WFS_BASE:-https://openmaps.gov.bc.ca/geo/pub/WHSE_LAND_USE_PLANNING.RMP_OGMA_LEGAL_CURRENT_SVW/ows}"
 
 # OWNERSHIP-FILTER MODEL (matches crownlandmap.ca: green = discrete crown
 # PARCELS on a basemap, NOT a province-wide blanket). Crown = these owner types.

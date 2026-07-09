@@ -10,6 +10,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 "$HERE/01_fetch_and_filter_crown.sh"
 "$HERE/02_tile_crown.sh"
 "$HERE/03_fetch_tile_tenures.sh"
+"$HERE/07_fetch_tile_oldgrowth.sh"
 "$HERE/04_basemap.sh"
 "$HERE/05_style_manifest.sh"
 

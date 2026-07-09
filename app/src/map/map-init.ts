@@ -9,6 +9,7 @@ export interface MapHandle {
   map: maplibregl.Map;
   setCrownVisible(v: boolean): void;
   setTenuresVisible(v: boolean): void;
+  setOldGrowthVisible(v: boolean): void;
   setCrownOpacity(v: number): void;
 }
 
@@ -51,6 +52,8 @@ export async function initMap(pack: Pack): Promise<MapHandle> {
     map,
     setCrownVisible: (v) => setVisible([LAYER_IDS.crownFill, LAYER_IDS.crownLine], v),
     setTenuresVisible: (v) => setVisible([LAYER_IDS.tenureLine], v),
+    setOldGrowthVisible: (v) =>
+      setVisible([LAYER_IDS.oldGrowthFill, LAYER_IDS.oldGrowthLine], v),
     setCrownOpacity: (v) => {
       if (map.getLayer(LAYER_IDS.crownFill)) {
         map.setPaintProperty(LAYER_IDS.crownFill, "fill-opacity", v);

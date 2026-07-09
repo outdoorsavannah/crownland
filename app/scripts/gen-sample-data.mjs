@@ -4,7 +4,7 @@
 // render + pmtiles-protocol + tap/query paths.
 //
 // Requires: tippecanoe on PATH (brew install tippecanoe).
-// Output:   app/public/packs/{basemap,crown,tenures}-sample.pmtiles
+// Output:   app/public/packs/{basemap,crown,tenures,oldgrowth}-sample.pmtiles
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
@@ -78,6 +78,26 @@ const tenures = fc(
   }),
 );
 
+// ---- Old Growth Management Areas (OGMA legal reserves, purple fill) ----
+const OGMA_TYPES = ["Legal - Order", "Legal - FRPA"];
+const OGMA_REASONS = ["Old Growth Representation", "Biodiversity", "Wildlife Habitat"];
+const oldgrowth = fc(
+  Array.from({ length: 16 }, (_, i) => {
+    const cx = rand(W + 0.04, E - 0.04);
+    const cy = rand(S + 0.16, N - 0.04);
+    return {
+      type: "Feature",
+      properties: {
+        LEGAL_OGMA_PROVID: `OGMA-${9000 + i}`,
+        OGMA_TYPE: OGMA_TYPES[i % OGMA_TYPES.length],
+        OGMA_PRIMARY_REASON: OGMA_REASONS[i % OGMA_REASONS.length],
+        FEATURE_AREA_SQM: Math.round(rand(5, 900)) * 10000,
+      },
+      geometry: { type: "Polygon", coordinates: [ring(cx, cy, rand(0.015, 0.05), rand(0.015, 0.045), 7)] },
+    };
+  }),
+);
+
 // ---- Basemap: water (sea + a lake), landcover (land), roads ----
 const water = fc([
   {
@@ -120,6 +140,7 @@ function writeGeo(name, data) {
 
 const crownGeo = writeGeo("crown.geojson", crown);
 const tenuresGeo = writeGeo("tenures.geojson", tenures);
+const oldgrowthGeo = writeGeo("oldgrowth.geojson", oldgrowth);
 const waterGeo = writeGeo("water.geojson", water);
 const landGeo = writeGeo("land.geojson", landcover);
 const roadsGeo = writeGeo("roads.geojson", roads);
@@ -137,6 +158,9 @@ tile([
 
 console.log("Tiling tenures-sample.pmtiles …");
 tile(["-o", join(OUT, "tenures-sample.pmtiles"), "-f", "-Z5", "-z14", "-l", "tenures", tenuresGeo]);
+
+console.log("Tiling oldgrowth-sample.pmtiles …");
+tile(["-o", join(OUT, "oldgrowth-sample.pmtiles"), "-f", "-Z5", "-z14", "-l", "oldgrowth", oldgrowthGeo]);
 
 console.log("Tiling basemap-sample.pmtiles …");
 tile([

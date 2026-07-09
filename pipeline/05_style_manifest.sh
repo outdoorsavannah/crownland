@@ -55,7 +55,7 @@ def entry(dir_, name):
 
 def archives_for(dir_, suffix):
     a = {}
-    for kind in ("basemap", "crown", "tenures", "terrain"):
+    for kind in ("basemap", "crown", "tenures", "oldgrowth", "terrain"):
         e = entry(dir_, f"{kind}-{suffix}.pmtiles")
         if e:
             a[kind] = e
@@ -72,7 +72,7 @@ packs.append({
     "bbox": [-123.6, 48.3, -123.0, 48.7],
     "archives": {k: {"file": f"{k}-sample.pmtiles", "url": f"packs/{k}-sample.pmtiles",
                      "bytes": 0, "sha256": "", "bundled": True}
-                 for k in ("basemap", "crown", "tenures")},
+                 for k in ("basemap", "crown", "tenures", "oldgrowth")},
 })
 
 # 2. Region packs (spec §8/§14). ids/bboxes MIRROR app/src/data/manifest.ts —
@@ -90,7 +90,7 @@ for rid, name, bbox in REGIONS:
     a = archives_for(regions_dir, rid)
     if a:
         packs.append({"id": rid, "name": name,
-                      "description": "Region pack. Basemap + crown + tenures.",
+                      "description": "Region pack. Basemap + crown + tenures + old growth.",
                       "bbox": bbox, "archives": a})
 
 # 3. Whole-BC pack, if built.
