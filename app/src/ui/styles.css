@@ -32,6 +32,51 @@ body {
   inset: 0;
 }
 
+/* ---- Boot overlay (shown until the app renders; see index.html) ---- */
+.boot {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+}
+.boot.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.boot-spinner {
+  width: 34px;
+  height: 34px;
+  margin: 0 auto 14px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: boot-spin 0.9s linear infinite;
+}
+@keyframes boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.boot-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+.boot-sub {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.boot-sub.boot-error {
+  color: var(--danger);
+}
+
 /* Hide the default MapLibre attribution box; we render our own always-visible
    attribution + disclaimer (spec §9). */
 .maplibregl-ctrl-attrib {

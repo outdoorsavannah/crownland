@@ -10,6 +10,17 @@
     <link rel="stylesheet" href="./src/ui/styles.css" />
   </head>
   <body>
+    <!-- Boot overlay: part of the initial HTML so it paints instantly (no black
+         screen while the app initialises). main.ts removes it once content
+         renders, or replaces it with an error + Retry if boot fails. -->
+    <div id="boot" class="boot">
+      <div class="boot-inner">
+        <div class="boot-spinner" aria-hidden="true"></div>
+        <div class="boot-title">BC Crown Land</div>
+        <div class="boot-sub">Loading…</div>
+      </div>
+    </div>
+
     <div id="map"></div>
 
     <!-- Top-right control stack -->

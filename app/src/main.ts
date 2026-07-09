@@ -24,7 +24,40 @@ async function returnToPacks(): Promise<void> {
   location.reload();
 }
 
+/** Remove the initial boot overlay once real content has rendered. */
+function hideBoot(): void {
+  const boot = document.getElementById("boot");
+  if (!boot) return;
+  boot.classList.add("hidden");
+  setTimeout(() => boot.remove(), 300);
+}
+
+/** Replace the boot overlay with an error + Retry instead of a black screen. */
+function showBootError(message: string): void {
+  const boot = document.getElementById("boot");
+  if (!boot) return;
+  boot.classList.remove("hidden");
+  boot.innerHTML = "";
+  const inner = document.createElement("div");
+  inner.className = "boot-inner";
+  const title = document.createElement("div");
+  title.className = "boot-title";
+  title.textContent = "Couldn’t start the map";
+  const sub = document.createElement("div");
+  sub.className = "boot-sub boot-error";
+  sub.textContent = message;
+  const retry = document.createElement("button");
+  retry.className = "btn primary";
+  retry.style.marginTop = "16px";
+  retry.textContent = "Retry";
+  retry.addEventListener("click", () => location.reload());
+  inner.append(title, sub, retry);
+  boot.append(inner);
+}
+
 async function main(): Promise<void> {
+  // loadManifest is cache-first + timeout-bounded, so this never blocks boot on
+  // the network (offline-first, spec §10).
   const manifest = await loadManifest();
 
   // Reopen the last-used pack directly if it is still installed; otherwise the
@@ -40,18 +73,20 @@ async function main(): Promise<void> {
       await Preferences.remove({ key: LAST_PACK_KEY });
       document.getElementById("ui-root")!.innerHTML = "";
       await showDownloadScreen(manifest, open);
+      hideBoot();
       toast(`"${pack.name}" isn't downloaded yet.`);
       return;
     }
     void Preferences.set({ key: LAST_PACK_KEY, value: pack.id });
     document.getElementById("ui-root")!.innerHTML = "";
-    void bootMap(manifest, pack);
+    await bootMap(manifest, pack);
   };
 
   if (lastPack) {
     await open(lastPack);
   } else {
     await showDownloadScreen(manifest, open);
+    hideBoot();
   }
 }
 
@@ -75,6 +110,7 @@ async function bootMap(manifest: Manifest, pack: Pack): Promise<void> {
   wireInteractions(handle, manifest);
   wireControls(handle, manifest, prefs);
   void refreshSavedPins(handle.map);
+  hideBoot(); // map is loaded and interactive — safe to reveal it
 
   if (import.meta.env.DEV) {
     (window as unknown as { __mapHandle?: MapHandle }).__mapHandle = handle;
@@ -305,4 +341,12 @@ function wireLongPress(
   map.on("mouseup", cancel);
 }
 
-void main();
+// Safety net: if any boot step throws (or an async rejection escapes), show the
+// error overlay instead of leaving the user on a black screen.
+main().catch((err) => showBootError(err instanceof Error ? err.message : String(err)));
+window.addEventListener("unhandledrejection", (e) => {
+  if (document.getElementById("boot")) {
+    const r = e.reason as { message?: string } | undefined;
+    showBootError(r?.message ?? String(e.reason ?? "Unexpected error"));
+  }
+});

@@ -45,24 +45,68 @@ async function saveInstalledState(s: InstalledState): Promise<void> {
   await Preferences.set({ key: STATE_KEY, value: JSON.stringify(s) });
 }
 
-/**
- * Fetch the remote manifest from the user-configured host; fall back to the
- * bundled copy when offline or the host is unreachable (spec §8, §10).
- */
-export async function loadManifest(hostBaseUrl?: string): Promise<Manifest> {
-  const base = hostBaseUrl ?? BUNDLED_MANIFEST.baseUrl;
+const MANIFEST_CACHE_KEY = "manifest-cache";
+// Hard ceiling on how long boot will EVER wait for the remote manifest. On a
+// marginal / low-data connection an un-aborted fetch can stall for a very long
+// time; without this the app blocks on a black screen until the OS gives up.
+const MANIFEST_TIMEOUT_MS = 5000;
+
+async function cachedManifest(): Promise<Manifest | null> {
+  const { value } = await Preferences.get({ key: MANIFEST_CACHE_KEY });
+  if (!value) return null;
+  try {
+    const m = JSON.parse(value) as Manifest;
+    return m.schema === 1 ? m : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch the remote manifest with a hard timeout; cache it on success. */
+async function fetchRemoteManifest(base: string): Promise<Manifest | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), MANIFEST_TIMEOUT_MS);
   try {
     const res = await fetch(new URL(MANIFEST_FILE, base).toString(), {
       cache: "no-store",
+      signal: controller.signal,
     });
-    if (res.ok) {
-      const m = (await res.json()) as Manifest;
-      if (m.schema === 1) return m;
-    }
+    if (!res.ok) return null;
+    const m = (await res.json()) as Manifest;
+    if (m.schema !== 1) return null;
+    await Preferences.set({ key: MANIFEST_CACHE_KEY, value: JSON.stringify(m) });
+    return m;
   } catch {
-    /* offline or bad host — use bundled */
+    // Aborted (timeout), offline, or malformed — caller falls back.
+    return null;
+  } finally {
+    clearTimeout(timer);
   }
-  return BUNDLED_MANIFEST;
+}
+
+/**
+ * Resolve the manifest WITHOUT ever blocking boot on the network (spec §8, §10 —
+ * this is an offline-first app). Order of preference:
+ *   1. A previously-cached remote manifest → returned immediately, with a
+ *      background refresh so the next launch is current. This makes a returning
+ *      user's boot instant and network-independent.
+ *   2. Otherwise (first launch) a fresh remote fetch, bounded by a hard timeout.
+ *   3. Otherwise the bundled manifest, so the pack list still renders offline.
+ */
+export async function loadManifest(hostBaseUrl?: string): Promise<Manifest> {
+  const base = hostBaseUrl ?? BUNDLED_MANIFEST.baseUrl;
+
+  const cached = await cachedManifest();
+  if (cached) {
+    // Serve the cache now; refresh in the background (don't await — a slow or
+    // stalled network must never delay boot).
+    void fetchRemoteManifest(base);
+    return cached;
+  }
+
+  // No cache yet (first launch). Wait for the remote, but only up to the
+  // timeout, then fall back to the bundled copy.
+  return (await fetchRemoteManifest(base)) ?? BUNDLED_MANIFEST;
 }
 
 /** Resolve an archive's absolute download URL against the manifest base. */
