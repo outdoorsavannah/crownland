@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "gen:sample": "node scripts/gen-sample-data.mjs",
+    "test": "node scripts/test-resume.mjs",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
     "cap:android": "cap open android"

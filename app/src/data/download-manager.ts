@@ -9,6 +9,7 @@ import {
   type ArchiveEntry,
 } from "./manifest";
 import { archivePath, ensurePacksDir, deleteArchive } from "./storage";
+import { resumeDecision } from "./resume";
 
 // First-run data download (spec §8): manifest fetch + region packs + resume +
 // checksum verification + version tracking.
@@ -43,6 +44,35 @@ export async function loadInstalledState(): Promise<InstalledState> {
 
 async function saveInstalledState(s: InstalledState): Promise<void> {
   await Preferences.set({ key: STATE_KEY, value: JSON.stringify(s) });
+}
+
+// Records which archive *version* (by sha256) the current on-disk partial bytes
+// belong to, so a resumed download never appends onto bytes from a different
+// version (which would splice old+new data and fail the checksum).
+const PARTIAL_KEY = "partial-downloads";
+
+async function loadPartials(): Promise<Record<string, string>> {
+  const { value } = await Preferences.get({ key: PARTIAL_KEY });
+  if (!value) return {};
+  try {
+    return JSON.parse(value) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+async function setPartial(file: string, sha: string): Promise<void> {
+  const p = await loadPartials();
+  if (p[file] === sha) return;
+  p[file] = sha;
+  await Preferences.set({ key: PARTIAL_KEY, value: JSON.stringify(p) });
+}
+
+async function clearPartial(file: string): Promise<void> {
+  const p = await loadPartials();
+  if (!(file in p)) return;
+  delete p[file];
+  await Preferences.set({ key: PARTIAL_KEY, value: JSON.stringify(p) });
 }
 
 const MANIFEST_CACHE_KEY = "manifest-cache";
@@ -171,23 +201,36 @@ export async function downloadArchive(
 ): Promise<void> {
   await ensurePacksDir();
   const url = resolveUrl(manifest, entry);
-  const already = await partialSize(entry.file);
 
   // If we already have the whole thing and it verifies, skip.
+  const already = await partialSize(entry.file);
   if (already === entry.bytes && entry.bytes > 0) {
     if (await verifyArchive(entry)) {
       onProgress({ received: entry.bytes, total: entry.bytes, ratio: 1 });
+      await clearPartial(entry.file);
       return;
     }
     await deleteArchive(entry.file);
+    await clearPartial(entry.file);
   }
 
+  // Only resume a partial that provably belongs to THIS version (see
+  // resumeDecision). A complete old version or a stale partial is deleted so we
+  // download a clean file rather than splicing mismatched bytes.
+  const onDisk = await partialSize(entry.file);
+  const partials = await loadPartials();
+  const { resumeFrom, deleteStale } = resumeDecision({
+    onDisk,
+    entryBytes: entry.bytes,
+    entrySha: entry.sha256,
+    recordedSha: partials[entry.file],
+  });
+  if (deleteStale) await deleteArchive(entry.file);
+  // Mark the on-disk bytes as belonging to this version so a later interrupted
+  // download can resume safely.
+  if (entry.sha256) await setPartial(entry.file, entry.sha256);
+
   const headers: Record<string, string> = {};
-  const resumeFrom = already > 0 && already < entry.bytes ? already : 0;
-  // A stale/old copy is present (e.g. an "Update" replacing changed data) but it
-  // is not a resumable partial — delete it so we write a clean file. Otherwise a
-  // leftover file could survive and fail the checksum.
-  if (resumeFrom === 0 && already > 0) await deleteArchive(entry.file);
   if (resumeFrom > 0) headers["Range"] = `bytes=${resumeFrom}-`;
 
   const res = await fetch(url, { headers, signal });
@@ -231,8 +274,10 @@ export async function downloadArchive(
 
   if (entry.sha256 && !(await verifyArchive(entry))) {
     await deleteArchive(entry.file);
+    await clearPartial(entry.file);
     throw new Error(`Checksum mismatch for ${entry.file}`);
   }
+  await clearPartial(entry.file); // complete + verified
 }
 
 let firstWriteDone = new Set<string>();
