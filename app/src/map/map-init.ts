@@ -28,12 +28,14 @@ export async function initMap(pack: Pack): Promise<MapHandle> {
     zoom: 8,
     maxZoom: 16,
     attributionControl: false,
-    dragRotate: false,
+    // Rotation enabled so the compass control is meaningful (two-finger rotate
+    // on touch, right-drag on desktop). Pitch/tilt stays off — this is a flat
+    // reference map.
+    dragRotate: true,
     pitchWithRotate: false,
   });
 
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
-  map.touchZoomRotate.disableRotation();
 
   await new Promise<void>((resolve) => map.on("load", () => resolve()));
 

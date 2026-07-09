@@ -8,9 +8,12 @@ import type { Manifest, Pack } from "./data/manifest";
 import { showFeatureSheet, showPinSheet } from "./ui/feature-sheet";
 import { openLayerControls, loadLayerPrefs, applyLayerPrefs } from "./ui/layer-controls";
 import { openInfoPanel } from "./ui/info-panel";
+import { openSearch } from "./ui/search";
+import { openSavedPins } from "./ui/pins-panel";
 import { ensurePermission, getFix } from "./location/geolocation";
 import { fmtDecimal } from "./ui/coords";
 import { archiveExists } from "./data/storage";
+import { loadPins, addPin, removePin } from "./data/saved-pins";
 import { toast } from "./ui/toast";
 
 const LAST_PACK_KEY = "last-pack-id";
@@ -71,6 +74,7 @@ async function bootMap(manifest: Manifest, pack: Pack): Promise<void> {
 
   wireInteractions(handle, manifest);
   wireControls(handle, manifest, prefs);
+  void refreshSavedPins(handle.map);
 
   if (import.meta.env.DEV) {
     (window as unknown as { __mapHandle?: MapHandle }).__mapHandle = handle;
@@ -87,6 +91,42 @@ function wireControls(
   });
   document.getElementById("btn-info")!.addEventListener("click", () => {
     openInfoPanel(manifest, returnToPacks);
+  });
+
+  // Compass: needle points to true north; tap resets bearing to north.
+  const compassBtn = document.getElementById("btn-compass")!;
+  const needle = compassBtn.querySelector(".compass-needle") as HTMLElement;
+  const syncCompass = () => {
+    needle.style.transform = `rotate(${-handle.map.getBearing()}deg)`;
+  };
+  handle.map.on("rotate", syncCompass);
+  syncCompass();
+  compassBtn.addEventListener("click", () => handle.map.easeTo({ bearing: 0, pitch: 0 }));
+
+  // Search: parse a coordinate string, fly there, drop a (saveable) pin.
+  document.getElementById("btn-search")!.addEventListener("click", () => {
+    openSearch(handle.map, (lngLat) => {
+      handle.map.flyTo({
+        center: [lngLat.lng, lngLat.lat],
+        zoom: Math.max(handle.map.getZoom(), 12),
+      });
+      dropPinAndOpen(handle.map, lngLat);
+    });
+  });
+
+  // Saved pins list: fly to a pin, or delete it.
+  document.getElementById("btn-pins")!.addEventListener("click", () => {
+    void openSavedPins(
+      (pin) =>
+        handle.map.flyTo({
+          center: [pin.lng, pin.lat],
+          zoom: Math.max(handle.map.getZoom(), 13),
+        }),
+      async (pin) => {
+        await removePin(pin.id);
+        await refreshSavedPins(handle.map);
+      },
+    );
   });
 
   let locateMarker: maplibregl.Marker | null = null;
@@ -153,17 +193,9 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
   map.on("mouseenter", queryLayers[0] ?? "", () => (map.getCanvas().style.cursor = "pointer"));
   map.on("mouseleave", queryLayers[0] ?? "", () => (map.getCanvas().style.cursor = ""));
 
-  // Long-press → dropped pin with decimal + DMS (spec §9, acceptance #4).
-  wireLongPress(map, (lngLat) => {
-    if (pinMarker) pinMarker.remove();
-    const el = document.createElement("div");
-    el.style.cssText =
-      "width:14px;height:14px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#e0a53a;border:2px solid #fff";
-    pinMarker = new maplibregl.Marker({ element: el, anchor: "bottom" })
-      .setLngLat(lngLat)
-      .addTo(map);
-    showPinSheet(lngLat);
-  });
+  // Long-press → dropped pin; the sheet offers "Save pin" (spec §9, acceptance
+  // #4, plus saved-pins extension).
+  wireLongPress(map, (lngLat) => dropPinAndOpen(map, lngLat));
 
   // Live coordinate readout (spec §9).
   const readout = document.getElementById("coord-readout")!;
@@ -176,7 +208,64 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
   updateReadout(map.getCenter());
 }
 
-let pinMarker: maplibregl.Marker | null = null;
+// ---- Dropped pins + saved pins ----
+let pinMarker: maplibregl.Marker | null = null; // transient (unsaved) pin
+let savedMarkers: maplibregl.Marker[] = [];
+
+function makePinEl(color: string): HTMLElement {
+  const el = document.createElement("div");
+  el.style.cssText =
+    "width:16px;height:16px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);" +
+    `background:${color};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);cursor:pointer`;
+  return el;
+}
+
+/** Drop a transient (amber) pin and open its sheet with a "Save pin" action. */
+function dropPinAndOpen(map: maplibregl.Map, lngLat: { lng: number; lat: number }): void {
+  pinMarker?.remove();
+  pinMarker = new maplibregl.Marker({ element: makePinEl("#e0a53a"), anchor: "bottom" })
+    .setLngLat(lngLat)
+    .addTo(map);
+  showPinSheet(lngLat, {
+    onSave: async (name) => {
+      await addPin({
+        name: name || `Pin ${fmtDecimal(lngLat.lat, lngLat.lng)}`,
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+      });
+      pinMarker?.remove(); // it becomes a persistent saved marker instead
+      pinMarker = null;
+      await refreshSavedPins(map);
+      toast("Pin saved");
+    },
+  });
+}
+
+/** Re-render all saved pins as persistent (green) markers. */
+async function refreshSavedPins(map: maplibregl.Map): Promise<void> {
+  for (const m of savedMarkers) m.remove();
+  savedMarkers = [];
+  for (const pin of await loadPins()) {
+    const marker = new maplibregl.Marker({ element: makePinEl("#2f9e57"), anchor: "bottom" })
+      .setLngLat([pin.lng, pin.lat])
+      .addTo(map);
+    marker.getElement().addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      showPinSheet(
+        { lng: pin.lng, lat: pin.lat },
+        {
+          saved: { id: pin.id, name: pin.name },
+          onDelete: async () => {
+            await removePin(pin.id);
+            await refreshSavedPins(map);
+            toast("Pin deleted");
+          },
+        },
+      );
+    });
+    savedMarkers.push(marker);
+  }
+}
 
 /** Long-press (touch) / long mouse-down that doesn't turn into a drag. */
 function wireLongPress(

@@ -18,6 +18,75 @@ export function fmtDMS(lat: number, lng: number): string {
   return `${toDMS(lat, true)} ${toDMS(lng, false)}`;
 }
 
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+const inRange = (v: LatLng): LatLng | null =>
+  v.lat >= -90 && v.lat <= 90 && v.lng >= -180 && v.lng <= 180 ? v : null;
+
+// Assign a pair of magnitudes to lat/lng using their hemisphere letters (if
+// any). Falls back to "lat first" order when no letters are given.
+function assign(
+  a: { val: number; hemi?: string },
+  b: { val: number; hemi?: string },
+): LatLng | null {
+  const sign = (h?: string) => (h === "S" || h === "W" ? -1 : 1);
+  const isLat = (h?: string) => h === "N" || h === "S";
+  const isLng = (h?: string) => h === "E" || h === "W";
+
+  let lat: number, lng: number;
+  if (isLng(a.hemi) || isLat(b.hemi)) {
+    // First token is a longitude (or the second is explicitly a latitude).
+    lng = Math.abs(a.val) * sign(a.hemi);
+    lat = Math.abs(b.val) * sign(b.hemi);
+  } else {
+    lat = a.hemi ? Math.abs(a.val) * sign(a.hemi) : a.val;
+    lng = b.hemi ? Math.abs(b.val) * sign(b.hemi) : b.val;
+  }
+  return inRange({ lat, lng });
+}
+
+/**
+ * Parse a free-text coordinate string into { lat, lng }. Supports decimal
+ * degrees ("48.5, -123.3", "48.5 -123.3") and DMS with hemisphere letters
+ * ("48°30'00\"N 123°18'00\"W", "48 30 N, 123 18 W"). Returns null if it can't
+ * read two valid coordinates. Assumes lat-before-lng unless N/S/E/W say
+ * otherwise. This is the app's only "search" — it has no online geocoder.
+ */
+export function parseCoordinates(input: string): LatLng | null {
+  const s = input.trim();
+  if (!s) return null;
+
+  // DMS with an explicit hemisphere letter anchoring each coordinate.
+  const dms = [
+    ...s.matchAll(
+      /(\d+(?:\.\d+)?)\s*[°:\s]\s*(?:(\d+(?:\.\d+)?)\s*['′:\s]\s*)?(?:(\d+(?:\.\d+)?)\s*["″]?\s*)?([NSEW])/gi,
+    ),
+  ];
+  if (dms.length === 2) {
+    const toDec = (m: RegExpMatchArray) => ({
+      val: Number(m[1]) + Number(m[2] ?? 0) / 60 + Number(m[3] ?? 0) / 3600,
+      hemi: m[4].toUpperCase(),
+    });
+    return assign(toDec(dms[0]), toDec(dms[1]));
+  }
+
+  // Decimal degrees: two signed numbers with optional trailing hemisphere.
+  const dec = s.match(
+    /^\s*([+-]?\d+(?:\.\d+)?)\s*°?\s*([NSEW])?\s*[,;\s]\s*([+-]?\d+(?:\.\d+)?)\s*°?\s*([NSEW])?\s*$/i,
+  );
+  if (dec) {
+    return assign(
+      { val: Number(dec[1]), hemi: dec[2]?.toUpperCase() },
+      { val: Number(dec[3]), hemi: dec[4]?.toUpperCase() },
+    );
+  }
+
+  return null;
+}
+
 export async function copyText(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard?.writeText) {

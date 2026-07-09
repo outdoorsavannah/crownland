@@ -93,9 +93,25 @@ export function showFeatureSheet(
   sheet.body.append(coord);
 }
 
-/** Long-press → dropped pin with lat/lng in decimal + DMS and a copy button. */
-export function showPinSheet(lngLat: { lng: number; lat: number }): void {
-  const sheet = openSheet("Dropped pin");
+interface PinSheetOpts {
+  /** Present when viewing an already-saved pin (shows name + Delete). */
+  saved?: { id: string; name: string };
+  /** Called with the entered name to persist a new pin (shows Save controls). */
+  onSave?: (name: string) => void | Promise<void>;
+  /** Called to delete the saved pin. */
+  onDelete?: () => void | Promise<void>;
+}
+
+/**
+ * Long-press / search / saved-marker → sheet with lat/lng (decimal + DMS), a
+ * copy button, and (per opts) either a "Save pin" name field or a "Delete"
+ * action for an existing saved pin (spec §9 extension).
+ */
+export function showPinSheet(
+  lngLat: { lng: number; lat: number },
+  opts: PinSheetOpts = {},
+): void {
+  const sheet = openSheet(opts.saved ? opts.saved.name : "Dropped pin");
   const dec = fmtDecimal(lngLat.lat, lngLat.lng, 6);
   const dms = fmtDMS(lngLat.lat, lngLat.lng);
 
@@ -116,4 +132,39 @@ export function showPinSheet(lngLat: { lng: number; lat: number }): void {
     setTimeout(() => (copyBtn.textContent = "Copy coordinates"), 1500);
   });
   sheet.body.append(copyBtn);
+
+  if (opts.onSave) {
+    const name = document.createElement("input");
+    name.type = "text";
+    name.className = "text-input";
+    name.placeholder = "Name this pin (optional)";
+    name.autocapitalize = "words";
+    name.style.marginTop = "12px";
+
+    const saveBtn = button("Save pin");
+    saveBtn.style.marginTop = "10px";
+    saveBtn.style.width = "100%";
+    saveBtn.addEventListener("click", async () => {
+      saveBtn.disabled = true;
+      await opts.onSave!(name.value.trim());
+      sheet.close();
+    });
+    name.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") saveBtn.click();
+    });
+    sheet.body.append(name, saveBtn);
+  }
+
+  if (opts.saved && opts.onDelete) {
+    const del = button("Delete pin");
+    del.style.marginTop = "10px";
+    del.style.width = "100%";
+    del.style.borderColor = "var(--danger)";
+    del.style.color = "var(--danger)";
+    del.addEventListener("click", async () => {
+      await opts.onDelete!();
+      sheet.close();
+    });
+    sheet.body.append(del);
+  }
 }

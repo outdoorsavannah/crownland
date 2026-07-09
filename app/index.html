@@ -15,6 +15,16 @@
     <!-- Top-right control stack -->
     <div id="controls" class="control-stack">
       <button id="btn-locate" class="ctrl-btn" title="Locate me" aria-label="Locate me">◎</button>
+      <button id="btn-compass" class="ctrl-btn" title="Reset north" aria-label="Reset bearing to north">
+        <span class="compass-needle">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <polygon points="12,2.5 8,13 12,10.8 16,13" fill="#d9534f" />
+            <polygon points="12,21.5 8,11 12,13.2 16,11" fill="#9fb0c0" />
+          </svg>
+        </span>
+      </button>
+      <button id="btn-search" class="ctrl-btn" title="Search coordinates" aria-label="Search coordinates">⌕</button>
+      <button id="btn-pins" class="ctrl-btn" title="Saved pins" aria-label="Saved pins">⚑</button>
       <button id="btn-layers" class="ctrl-btn" title="Layers" aria-label="Layers">▤</button>
       <button id="btn-info" class="ctrl-btn" title="Info & attribution" aria-label="Info">ⓘ</button>
     </div>
