@@ -1,7 +1,7 @@
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { registerPmtilesProtocol } from "./pmtiles-protocol";
-import { buildStyle, LAYER_IDS } from "./style";
+import { buildStyle, LAYER_IDS, vriFilter } from "./style";
 import type { Pack } from "../data/manifest";
 import { assertOfflineStyle } from "../data/offline-guard";
 
@@ -12,6 +12,8 @@ export interface MapHandle {
   setOldGrowthVisible(v: boolean): void;
   setOldGrowthNonLegalVisible(v: boolean): void;
   setBigTreesVisible(v: boolean): void;
+  setVriVisible(v: boolean): void;
+  setVriFilter(minAge: number, minHeight: number): void;
   setCrownOpacity(v: number): void;
 }
 
@@ -61,6 +63,13 @@ export async function initMap(pack: Pack): Promise<MapHandle> {
     setOldGrowthNonLegalVisible: (v) =>
       setVisible([LAYER_IDS.oldGrowthNlFill, LAYER_IDS.oldGrowthNlLine], v),
     setBigTreesVisible: (v) => setVisible([LAYER_IDS.bigTrees, LAYER_IDS.bigTreeLabels], v),
+    setVriVisible: (v) => setVisible([LAYER_IDS.vriFill, LAYER_IDS.vriLine], v),
+    setVriFilter: (minAge, minHeight) => {
+      const f = vriFilter(minAge, minHeight) as never;
+      for (const id of [LAYER_IDS.vriFill, LAYER_IDS.vriLine]) {
+        if (map.getLayer(id)) map.setFilter(id, f);
+      }
+    },
     setCrownOpacity: (v) => {
       if (map.getLayer(LAYER_IDS.crownFill)) {
         map.setPaintProperty(LAYER_IDS.crownFill, "fill-opacity", v);

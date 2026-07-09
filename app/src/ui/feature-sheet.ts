@@ -41,6 +41,9 @@ const PREFERRED: Record<string, string> = {
   elevation_m: "Elevation (m)",
   measured: "Last measured",
   id: "Registry ID",
+  // VRI (old-growth-by-age) fields.
+  age: "Stand age (yr)",
+  height: "Stand height (m)",
 };
 
 function attributeRows(props: Record<string, unknown>): [string, string][] {
@@ -78,6 +81,8 @@ export function showFeatureSheet(
       feature.sourceLayer === "oldgrowth_nonlegal"
         ? "Proposed OGMA (non-legal)"
         : "Old Growth Management Area";
+  } else if (feature.source === "vri") {
+    kind = "Forest stand (VRI)";
   } else {
     kind = "Crown Land";
   }

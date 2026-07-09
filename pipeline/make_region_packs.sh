@@ -40,6 +40,7 @@ for row in "${REGIONS[@]}"; do
   extract "$OUT_DIR/crown-bc.pmtiles"     "$REGIONS_DIR/crown-$id.pmtiles"     "$bbox"
   extract "$OUT_DIR/tenures-bc.pmtiles"   "$REGIONS_DIR/tenures-$id.pmtiles"   "$bbox"
   extract "$OUT_DIR/oldgrowth-bc.pmtiles" "$REGIONS_DIR/oldgrowth-$id.pmtiles" "$bbox"
+  extract "$OUT_DIR/vri-bc.pmtiles"       "$REGIONS_DIR/vri-$id.pmtiles"       "$bbox"
   extract "$OUT_DIR/terrain-bc.pmtiles"   "$REGIONS_DIR/terrain-$id.pmtiles"   "$bbox"
 done
 

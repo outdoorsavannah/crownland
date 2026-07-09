@@ -15,8 +15,19 @@ export TENURE_MINZOOM="${TENURE_MINZOOM:-6}"
 export TENURE_MAXZOOM="${TENURE_MAXZOOM:-14}"
 export OLDGROWTH_MINZOOM="${OLDGROWTH_MINZOOM:-5}"
 export OLDGROWTH_MAXZOOM="${OLDGROWTH_MAXZOOM:-14}"
+export VRI_MINZOOM="${VRI_MINZOOM:-7}"
+export VRI_MAXZOOM="${VRI_MAXZOOM:-13}"
 export BASEMAP_MINZOOM="${BASEMAP_MINZOOM:-0}"
 export BASEMAP_MAXZOOM="${BASEMAP_MAXZOOM:-14}"
+
+# VRI (Vegetation Resources Inventory) — old-growth-by-age source. Huge (4-5M
+# polygons); download the file geodatabase manually from the BC Data Catalogue
+# ("VEG_COMP_LYR_R1_POLY", OGL-BC) and set VRI_SRC to it. We pre-filter to
+# PROJ_AGE_1 >= VRI_MIN_AGE at build time to keep it feasible; the app's age/
+# height sliders filter the rest at runtime. Needs GDAL (ogr2ogr).
+export VRI_SRC="${VRI_SRC:-$OUT_DIR/../data/VRI.gdb}"
+export VRI_LAYER="${VRI_LAYER:-VEG_COMP_LYR_R1_POLY}"
+export VRI_MIN_AGE="${VRI_MIN_AGE:-140}"
 
 # planetiler JVM heap. Keep small on low-RAM boxes (e.g. a 4 GB Pi) — the basemap
 # step uses memory-mapped storage so most data lives off-heap on disk.

@@ -116,6 +116,25 @@ const oldgrowthNonlegal = fc(
   }),
 );
 
+// ---- VRI old-growth-by-age (age/height-varied polygons for the sliders) ----
+const VRI_SPECIES = ["FD", "CW", "HW", "BA", "SS", "PL"];
+const oldgrowthVri = fc(
+  Array.from({ length: 60 }, (_, i) => {
+    const cx = rand(W + 0.02, E - 0.02);
+    const cy = rand(S + 0.14, N - 0.02);
+    return {
+      type: "Feature",
+      properties: {
+        // Spread across the old-growth age range so the age slider visibly filters.
+        age: Math.round(rand(140, 800)),
+        height: Math.round(rand(8, 88)),
+        species: VRI_SPECIES[i % VRI_SPECIES.length],
+      },
+      geometry: { type: "Polygon", coordinates: [ring(cx, cy, rand(0.01, 0.06), rand(0.01, 0.05), 6)] },
+    };
+  }),
+);
+
 // ---- Basemap: water (sea + a lake), landcover (land), roads ----
 const water = fc([
   {
@@ -160,6 +179,7 @@ const crownGeo = writeGeo("crown.geojson", crown);
 const tenuresGeo = writeGeo("tenures.geojson", tenures);
 const oldgrowthGeo = writeGeo("oldgrowth.geojson", oldgrowth);
 const oldgrowthNonlegalGeo = writeGeo("oldgrowth_nonlegal.geojson", oldgrowthNonlegal);
+const vriGeo = writeGeo("vri.geojson", oldgrowthVri);
 const waterGeo = writeGeo("water.geojson", water);
 const landGeo = writeGeo("land.geojson", landcover);
 const roadsGeo = writeGeo("roads.geojson", roads);
@@ -184,6 +204,9 @@ tile([
   "-L", `oldgrowth:${oldgrowthGeo}`,
   "-L", `oldgrowth_nonlegal:${oldgrowthNonlegalGeo}`,
 ]);
+
+console.log("Tiling vri-sample.pmtiles (old-growth-by-age) …");
+tile(["-o", join(OUT, "vri-sample.pmtiles"), "-f", "-Z5", "-z14", "-l", "vri", vriGeo]);
 
 console.log("Tiling basemap-sample.pmtiles …");
 tile([

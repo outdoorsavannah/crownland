@@ -1,5 +1,6 @@
 import { openSheet } from "./sheet";
 import type { MapHandle } from "../map/map-init";
+import { VRI_FLOOR_AGE, VRI_MAX_AGE, VRI_MAX_HEIGHT } from "../map/style";
 import { Preferences } from "@capacitor/preferences";
 
 // Layer toggles (crown / tenures) + crown opacity slider (spec §9). Choices are
@@ -11,6 +12,9 @@ interface LayerPrefs {
   oldgrowth: boolean;
   oldgrowthNonLegal: boolean;
   bigtrees: boolean;
+  vri: boolean;
+  vriMinAge: number;
+  vriMinHeight: number;
   opacity: number;
 }
 
@@ -21,6 +25,9 @@ const DEFAULTS: LayerPrefs = {
   oldgrowth: true,
   oldgrowthNonLegal: true,
   bigtrees: true,
+  vri: false, // heavy layer, off by default
+  vriMinAge: VRI_FLOOR_AGE,
+  vriMinHeight: 0,
   opacity: 0.35,
 };
 
@@ -44,7 +51,41 @@ export function applyLayerPrefs(handle: MapHandle, prefs: LayerPrefs): void {
   handle.setOldGrowthVisible(prefs.oldgrowth);
   handle.setOldGrowthNonLegalVisible(prefs.oldgrowthNonLegal);
   handle.setBigTreesVisible(prefs.bigtrees);
+  handle.setVriFilter(prefs.vriMinAge, prefs.vriMinHeight);
+  handle.setVriVisible(prefs.vri);
   handle.setCrownOpacity(prefs.opacity);
+}
+
+/** A labelled range slider whose label shows the live value. */
+function sliderRow(
+  label: (v: number) => string,
+  min: number,
+  max: number,
+  step: number,
+  value: number,
+  onInput: (v: number) => void,
+  onCommit: () => void,
+): HTMLElement {
+  const row = document.createElement("div");
+  row.style.padding = "10px 0 4px";
+  const l = document.createElement("label");
+  l.style.display = "block";
+  l.style.marginBottom = "6px";
+  l.textContent = label(value);
+  const input = document.createElement("input");
+  input.type = "range";
+  input.min = String(min);
+  input.max = String(max);
+  input.step = String(step);
+  input.value = String(value);
+  input.addEventListener("input", () => {
+    const v = Number(input.value);
+    l.textContent = label(v);
+    onInput(v);
+  });
+  input.addEventListener("change", onCommit);
+  row.append(l, input);
+  return row;
 }
 
 function toggleRow(
@@ -98,6 +139,11 @@ export function openLayerControls(handle: MapHandle, prefs: LayerPrefs): void {
       handle.setBigTreesVisible(v);
       void save(prefs);
     }),
+    toggleRow("Old growth by age (VRI)", prefs.vri, (v) => {
+      prefs.vri = v;
+      handle.setVriVisible(v);
+      void save(prefs);
+    }),
   );
 
   const opRow = document.createElement("div");
@@ -119,4 +165,22 @@ export function openLayerControls(handle: MapHandle, prefs: LayerPrefs): void {
   slider.addEventListener("change", () => void save(prefs));
   opRow.append(opLabel, slider);
   sheet.body.append(opRow);
+
+  // VRI old-growth-by-age filters. These drive the map filter live and only
+  // matter when the VRI layer is on.
+  const applyVri = () => handle.setVriFilter(prefs.vriMinAge, prefs.vriMinHeight);
+  sheet.body.append(
+    sliderRow(
+      (v) => `VRI — min age: ${v} yr`,
+      VRI_FLOOR_AGE, VRI_MAX_AGE, 10, prefs.vriMinAge,
+      (v) => { prefs.vriMinAge = v; applyVri(); },
+      () => void save(prefs),
+    ),
+    sliderRow(
+      (v) => `VRI — min height: ${v} m`,
+      0, VRI_MAX_HEIGHT, 1, prefs.vriMinHeight,
+      (v) => { prefs.vriMinHeight = v; applyVri(); },
+      () => void save(prefs),
+    ),
+  );
 }

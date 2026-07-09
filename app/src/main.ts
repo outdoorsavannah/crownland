@@ -283,6 +283,7 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
     LAYER_IDS.oldGrowthFill,
     LAYER_IDS.oldGrowthNlFill,
     LAYER_IDS.crownFill,
+    LAYER_IDS.vriFill,
   ].filter((id) => map.getLayer(id));
 
   // Tap → drop a marker at the tap point + feature attributes + coordinates
@@ -306,6 +307,7 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
       feats.find((f) => f.source === "bigtrees") ??
       feats.find((f) => f.source === "tenures") ??
       feats.find((f) => f.source === "oldgrowth") ??
+      feats.find((f) => f.source === "crown") ??
       feats[0];
     showFeatureSheet(preferred, e.lngLat, () => {
       tapMarker?.remove();

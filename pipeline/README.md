@@ -49,6 +49,11 @@ cd pipeline
 # straight into the app bundle as a committed, always-on layer — not a pack).
 BIGTREES_XLSX=/path/to/BCBT_conifers.xlsx ./08_bigtrees.sh
 
+# Optional: VRI "old growth by age" (needs GDAL + a manually-downloaded VRI
+# geodatabase — VEG_COMP_LYR_R1_POLY, huge). Pre-filters to age >= VRI_MIN_AGE;
+# the app's two sliders filter age/height at runtime. Then region-pack + upload.
+VRI_SRC=/path/to/VRI.gdb ./09_vri.sh
+
 # or:
 ./run_all.sh
 ```

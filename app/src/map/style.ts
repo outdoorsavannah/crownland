@@ -23,9 +23,26 @@ export const LAYER_IDS = {
   oldGrowthLine: "oldgrowth-outline",
   oldGrowthNlFill: "oldgrowth-nl-fill",
   oldGrowthNlLine: "oldgrowth-nl-outline",
+  vriFill: "vri-fill",
+  vriLine: "vri-outline",
   bigTrees: "bigtrees-point",
   bigTreeLabels: "bigtrees-label",
 } as const;
+
+// VRI old-growth-by-age defaults. The build pre-filters to age >= VRI_FLOOR_AGE;
+// the app's two sliders filter further at runtime (min age + min height).
+export const VRI_FLOOR_AGE = 140;
+export const VRI_MAX_AGE = 600;
+export const VRI_MAX_HEIGHT = 90;
+
+/** MapLibre filter for the VRI fill from the two slider values. */
+export function vriFilter(minAge: number, minHeight: number): unknown[] {
+  return [
+    "all",
+    [">=", ["coalesce", ["get", "age"], 0], minAge],
+    [">=", ["coalesce", ["get", "height"], 0], minHeight],
+  ];
+}
 
 // Big trees ship as a bundled, always-on point layer (BC BigTree Registry,
 // UBC). The file lives in the app bundle (public/packs), so it is resolved
@@ -37,11 +54,13 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
   const crown = pack.archives.crown;
   const tenures = pack.archives.tenures;
   const oldgrowth = pack.archives.oldgrowth;
+  const vri = pack.archives.vri;
   const terrain = pack.archives.terrain;
   const basemapFile = basemap?.file;
   const crownFile = crown?.file;
   const tenuresFile = tenures?.file;
   const oldgrowthFile = oldgrowth?.file;
+  const vriFile = vri?.file;
 
   const sources: StyleSpecification["sources"] = {};
 
@@ -77,6 +96,12 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
     sources.oldgrowth = {
       type: "vector",
       url: `pmtiles://${await archiveUrl(oldgrowth.file, oldgrowth.bundled)}`,
+    };
+  }
+  if (vri) {
+    sources.vri = {
+      type: "vector",
+      url: `pmtiles://${await archiveUrl(vri.file, vri.bundled)}`,
     };
   }
   // Big trees: always available (bundled in the app), independent of the pack.
@@ -282,6 +307,44 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
           "text-color": "#3d6b8a",
           "text-halo-color": "#eaf3f9",
           "text-halo-width": 1.2,
+        },
+      },
+    );
+  }
+
+  if (vriFile) {
+    // VRI "old growth by age" — an age-graduated teal wash under the crown/
+    // reserve overlays. The two sliders drive `filter` at runtime; the initial
+    // filter shows everything at/above the build floor.
+    layers.push(
+      {
+        id: LAYER_IDS.vriFill,
+        type: "fill",
+        source: "vri",
+        "source-layer": "vri",
+        filter: vriFilter(VRI_FLOOR_AGE, 0) as never,
+        paint: {
+          // Pale teal (young-old) → deep teal (ancient), distinct from crown green.
+          "fill-color": [
+            "interpolate", ["linear"], ["coalesce", ["get", "age"], 0],
+            140, "#bfe0d6",
+            250, "#5bb3a2",
+            400, "#1f7d6e",
+            600, "#0d4f45",
+          ],
+          "fill-opacity": 0.5,
+        },
+      },
+      {
+        id: LAYER_IDS.vriLine,
+        type: "line",
+        source: "vri",
+        "source-layer": "vri",
+        filter: vriFilter(VRI_FLOOR_AGE, 0) as never,
+        paint: {
+          "line-color": "#0d4f45",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.2, 13, 0.6],
+          "line-opacity": 0.35,
         },
       },
     );

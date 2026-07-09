@@ -18,7 +18,13 @@ export interface ArchiveEntry {
   bundled?: boolean;
 }
 
-export type ArchiveKind = "basemap" | "crown" | "tenures" | "oldgrowth" | "terrain";
+export type ArchiveKind =
+  | "basemap"
+  | "crown"
+  | "tenures"
+  | "oldgrowth"
+  | "vri"
+  | "terrain";
 
 export interface Pack {
   id: string;
@@ -80,6 +86,7 @@ export const BUNDLED_MANIFEST: Manifest = {
         crown: sampleArchive("crown-sample.pmtiles"),
         tenures: sampleArchive("tenures-sample.pmtiles"),
         oldgrowth: sampleArchive("oldgrowth-sample.pmtiles"),
+        vri: sampleArchive("vri-sample.pmtiles"),
       },
     },
     region("vancouver-island", "Vancouver Island", [-128.8, 48.3, -123.0, 51.1]),
@@ -99,6 +106,7 @@ export const BUNDLED_MANIFEST: Manifest = {
         crown: placeholderArchive("crown-bc.pmtiles", 0),
         tenures: placeholderArchive("tenures-bc.pmtiles", 0),
         oldgrowth: placeholderArchive("oldgrowth-bc.pmtiles", 0),
+        vri: placeholderArchive("vri-bc.pmtiles", 0),
         terrain: placeholderArchive("terrain-bc.pmtiles", 0),
       },
     },
@@ -130,6 +138,7 @@ function region(
       crown: placeholderArchive(`crown-${id}.pmtiles`, 0),
       tenures: placeholderArchive(`tenures-${id}.pmtiles`, 0),
       oldgrowth: placeholderArchive(`oldgrowth-${id}.pmtiles`, 0),
+      vri: placeholderArchive(`vri-${id}.pmtiles`, 0),
       terrain: placeholderArchive(`terrain-${id}.pmtiles`, 0),
     },
   };

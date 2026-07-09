@@ -55,7 +55,7 @@ def entry(dir_, name):
 
 def archives_for(dir_, suffix):
     a = {}
-    for kind in ("basemap", "crown", "tenures", "oldgrowth", "terrain"):
+    for kind in ("basemap", "crown", "tenures", "oldgrowth", "vri", "terrain"):
         e = entry(dir_, f"{kind}-{suffix}.pmtiles")
         if e:
             a[kind] = e
