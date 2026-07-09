@@ -280,6 +280,7 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
   const queryLayers = [
     LAYER_IDS.tenureLine,
     LAYER_IDS.oldGrowthFill,
+    LAYER_IDS.oldGrowthNlFill,
     LAYER_IDS.crownFill,
   ].filter((id) => map.getLayer(id));
 

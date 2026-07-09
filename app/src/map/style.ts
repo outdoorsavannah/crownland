@@ -12,7 +12,8 @@ import type { Pack } from "../data/manifest";
 //                       transportation, place). We reference a lean subset.
 //   crown-*.pmtiles   : single source-layer "crown".
 //   tenures-*.pmtiles : single source-layer "tenures".
-//   oldgrowth-*.pmtiles : single source-layer "oldgrowth" (OGMA legal reserves).
+//   oldgrowth-*.pmtiles : source-layers "oldgrowth" (OGMA legal reserves) and
+//                         "oldgrowth_nonlegal" (proposed / non-legal OGMAs).
 
 export const LAYER_IDS = {
   crownFill: "crown-fill",
@@ -20,6 +21,8 @@ export const LAYER_IDS = {
   tenureLine: "tenure-outline",
   oldGrowthFill: "oldgrowth-fill",
   oldGrowthLine: "oldgrowth-outline",
+  oldGrowthNlFill: "oldgrowth-nl-fill",
+  oldGrowthNlLine: "oldgrowth-nl-outline",
 } as const;
 
 export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
@@ -303,6 +306,30 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
 
   if (oldgrowthFile) {
     layers.push(
+      {
+        // Proposed / non-legal OGMAs — drawn first (under legal), lighter fill
+        // and a dashed outline to read as "proposed".
+        id: LAYER_IDS.oldGrowthNlFill,
+        type: "fill",
+        source: "oldgrowth",
+        "source-layer": "oldgrowth_nonlegal",
+        paint: {
+          "fill-color": "#9b6fc9",
+          "fill-opacity": 0.22,
+        },
+      },
+      {
+        id: LAYER_IDS.oldGrowthNlLine,
+        type: "line",
+        source: "oldgrowth",
+        "source-layer": "oldgrowth_nonlegal",
+        paint: {
+          "line-color": "#7a4fb0",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.4, 14, 1.1],
+          "line-opacity": 0.75,
+          "line-dasharray": [2, 2],
+        },
+      },
       {
         // Old Growth Management Areas (OGMA legal). Purple, distinct from the
         // crown green, semi-transparent so crown/basemap read underneath.

@@ -5,8 +5,10 @@ Produces the offline map artifacts the app ships:
 `basemap-bc.pmtiles`, and a hosting `manifest.json`. **This never runs on device**
 (spec §4).
 
-> ℹ️ The old-growth overlay is **Old Growth Management Areas** (legal, current),
-> which is Open Government Licence – BC and therefore redistributable. The Old
+> ℹ️ The old-growth overlay is **Old Growth Management Areas** — both the legal
+> (designated) and non-legal (proposed) layers, tiled together into
+> `oldgrowth-bc.pmtiles` as source-layers `oldgrowth` + `oldgrowth_nonlegal`.
+> Both are Open Government Licence – BC and therefore redistributable. The Old
 > Growth Strategic Review "TAP" datasets (priority deferral / ancient forest /
 > big-treed) are licensed **"Access Only"** — reproduction needs written BC
 > permission — so they are deliberately not bundled.
@@ -39,7 +41,7 @@ cd pipeline
 ./01_fetch_and_filter_crown.sh     # download + filter crown -> work/crown.fgb
 ./02_tile_crown.sh                 # -> out/crown-bc.pmtiles
 ./03_fetch_tile_tenures.sh         # paged WFS -> out/tenures-bc.pmtiles
-./07_fetch_tile_oldgrowth.sh       # paged WFS (OGMA) -> out/oldgrowth-bc.pmtiles
+./07_fetch_tile_oldgrowth.sh       # paged WFS (OGMA legal+non-legal) -> out/oldgrowth-bc.pmtiles
 ./04_basemap.sh                    # planetiler -> out/basemap-bc.pmtiles
 ./05_style_manifest.sh             # sizes + fonts + out/manifest.json
 

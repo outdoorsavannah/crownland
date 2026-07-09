@@ -98,6 +98,24 @@ const oldgrowth = fc(
   }),
 );
 
+// ---- Proposed (non-legal) OGMAs — fewer, offset from the legal ones ----
+const oldgrowthNonlegal = fc(
+  Array.from({ length: 9 }, (_, i) => {
+    const cx = rand(W + 0.04, E - 0.04);
+    const cy = rand(S + 0.16, N - 0.04);
+    return {
+      type: "Feature",
+      properties: {
+        NON_LEGAL_OGMA_PROVID: `OGMA-NL-${7000 + i}`,
+        OGMA_TYPE: "Non-Legal - Proposed",
+        OGMA_PRIMARY_REASON: OGMA_REASONS[i % OGMA_REASONS.length],
+        FEATURE_AREA_SQM: Math.round(rand(5, 700)) * 10000,
+      },
+      geometry: { type: "Polygon", coordinates: [ring(cx, cy, rand(0.015, 0.05), rand(0.015, 0.045), 7)] },
+    };
+  }),
+);
+
 // ---- Basemap: water (sea + a lake), landcover (land), roads ----
 const water = fc([
   {
@@ -141,6 +159,7 @@ function writeGeo(name, data) {
 const crownGeo = writeGeo("crown.geojson", crown);
 const tenuresGeo = writeGeo("tenures.geojson", tenures);
 const oldgrowthGeo = writeGeo("oldgrowth.geojson", oldgrowth);
+const oldgrowthNonlegalGeo = writeGeo("oldgrowth_nonlegal.geojson", oldgrowthNonlegal);
 const waterGeo = writeGeo("water.geojson", water);
 const landGeo = writeGeo("land.geojson", landcover);
 const roadsGeo = writeGeo("roads.geojson", roads);
@@ -159,8 +178,12 @@ tile([
 console.log("Tiling tenures-sample.pmtiles …");
 tile(["-o", join(OUT, "tenures-sample.pmtiles"), "-f", "-Z5", "-z14", "-l", "tenures", tenuresGeo]);
 
-console.log("Tiling oldgrowth-sample.pmtiles …");
-tile(["-o", join(OUT, "oldgrowth-sample.pmtiles"), "-f", "-Z5", "-z14", "-l", "oldgrowth", oldgrowthGeo]);
+console.log("Tiling oldgrowth-sample.pmtiles (legal + non-legal layers) …");
+tile([
+  "-o", join(OUT, "oldgrowth-sample.pmtiles"), "-f", "-Z5", "-z14",
+  "-L", `oldgrowth:${oldgrowthGeo}`,
+  "-L", `oldgrowth_nonlegal:${oldgrowthNonlegalGeo}`,
+]);
 
 console.log("Tiling basemap-sample.pmtiles …");
 tile([

@@ -24,7 +24,9 @@ const PREFERRED: Record<string, string> = {
   OGMA_TYPE: "OGMA type",
   OGMA_PRIMARY_REASON: "Primary reason",
   LEGAL_OGMA_PROVID: "OGMA ID",
+  NON_LEGAL_OGMA_PROVID: "OGMA ID",
   LEGALIZATION_FRPA_DATE: "Legalized (FRPA)",
+  ORIGINAL_DECISION_DATE: "Decision date",
   ENABLING_DOCUMENT_TITLE: "Enabling document",
   FEATURE_AREA_SQM: "Area (m²)",
 };
@@ -55,7 +57,9 @@ export function showFeatureSheet(
     feature.source === "tenures"
       ? "Crown Tenure"
       : feature.source === "oldgrowth"
-        ? "Old Growth Management Area"
+        ? feature.sourceLayer === "oldgrowth_nonlegal"
+          ? "Proposed OGMA (non-legal)"
+          : "Old Growth Management Area"
         : "Crown Land";
   const sheet = openSheet(kind, onClose);
   const props = (feature.properties ?? {}) as Record<string, unknown>;

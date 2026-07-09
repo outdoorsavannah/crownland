@@ -9,11 +9,18 @@ interface LayerPrefs {
   crown: boolean;
   tenures: boolean;
   oldgrowth: boolean;
+  oldgrowthNonLegal: boolean;
   opacity: number;
 }
 
 const KEY = "layer-prefs";
-const DEFAULTS: LayerPrefs = { crown: true, tenures: true, oldgrowth: true, opacity: 0.35 };
+const DEFAULTS: LayerPrefs = {
+  crown: true,
+  tenures: true,
+  oldgrowth: true,
+  oldgrowthNonLegal: true,
+  opacity: 0.35,
+};
 
 export async function loadLayerPrefs(): Promise<LayerPrefs> {
   const { value } = await Preferences.get({ key: KEY });
@@ -33,6 +40,7 @@ export function applyLayerPrefs(handle: MapHandle, prefs: LayerPrefs): void {
   handle.setCrownVisible(prefs.crown);
   handle.setTenuresVisible(prefs.tenures);
   handle.setOldGrowthVisible(prefs.oldgrowth);
+  handle.setOldGrowthNonLegalVisible(prefs.oldgrowthNonLegal);
   handle.setCrownOpacity(prefs.opacity);
 }
 
@@ -72,9 +80,14 @@ export function openLayerControls(handle: MapHandle, prefs: LayerPrefs): void {
       handle.setTenuresVisible(v);
       void save(prefs);
     }),
-    toggleRow("Old growth (OGMA)", prefs.oldgrowth, (v) => {
+    toggleRow("Old growth — legal (OGMA)", prefs.oldgrowth, (v) => {
       prefs.oldgrowth = v;
       handle.setOldGrowthVisible(v);
+      void save(prefs);
+    }),
+    toggleRow("Old growth — proposed", prefs.oldgrowthNonLegal, (v) => {
+      prefs.oldgrowthNonLegal = v;
+      handle.setOldGrowthNonLegalVisible(v);
       void save(prefs);
     }),
   );

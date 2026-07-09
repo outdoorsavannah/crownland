@@ -33,6 +33,9 @@ export OSM_PBF_URL="https://download.geofabrik.de/north-america/canada/british-c
 # deferral / ancient forest / big-treed) are licensed "Access Only" — reproduction
 # needs written BC permission — so they are deliberately NOT used here.
 export OGMA_WFS_BASE="${OGMA_WFS_BASE:-https://openmaps.gov.bc.ca/geo/pub/WHSE_LAND_USE_PLANNING.RMP_OGMA_LEGAL_CURRENT_SVW/ows}"
+# Non-legal (proposed / draft) OGMAs — also OGL-BC. Tiled as a second layer
+# ("oldgrowth_nonlegal") inside the same oldgrowth-*.pmtiles archive.
+export OGMA_NONLEGAL_WFS_BASE="${OGMA_NONLEGAL_WFS_BASE:-https://openmaps.gov.bc.ca/geo/pub/WHSE_LAND_USE_PLANNING.RMP_OGMA_NON_LEGAL_CURRENT_SVW/ows}"
 
 # OWNERSHIP-FILTER MODEL (matches crownlandmap.ca: green = discrete crown
 # PARCELS on a basemap, NOT a province-wide blanket). Crown = these owner types.
