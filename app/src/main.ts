@@ -10,7 +10,8 @@ import { openLayerControls, loadLayerPrefs, applyLayerPrefs } from "./ui/layer-c
 import { openInfoPanel } from "./ui/info-panel";
 import { openSearch } from "./ui/search";
 import { openSavedPins } from "./ui/pins-panel";
-import { ensurePermission, getFix } from "./location/geolocation";
+import { ensurePermission, watch, clearWatch } from "./location/geolocation";
+import { startHeading } from "./location/heading";
 import { fmtDecimal } from "./ui/coords";
 import { archiveExists } from "./data/storage";
 import { loadPins, addPin, removePin } from "./data/saved-pins";
@@ -165,28 +166,111 @@ function wireControls(
     );
   });
 
-  let locateMarker: maplibregl.Marker | null = null;
+  wireLocate(handle);
+}
+
+// ---- Live location + heading beam (Google-Maps-style "you are here") ----
+
+/** Marker element: a location dot plus a compass-heading cone (hidden until a
+ *  heading is available). Returns the dot element and the beam path to toggle. */
+function makeLocationEl(): { el: HTMLElement; beam: HTMLElement } {
+  const el = document.createElement("div");
+  el.className = "gps-marker";
+  const uid = "gpsbeam-" + Math.random().toString(36).slice(2, 7);
+  el.innerHTML =
+    `<svg width="72" height="72" viewBox="-36 -36 72 72" style="overflow:visible;display:block">` +
+    `<defs><radialGradient id="${uid}" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="38">` +
+    `<stop offset="0" stop-color="#2f6fed" stop-opacity="0.7"/>` +
+    `<stop offset="0.5" stop-color="#2f6fed" stop-opacity="0.35"/>` +
+    `<stop offset="1" stop-color="#2f6fed" stop-opacity="0"/>` +
+    `</radialGradient></defs>` +
+    // Cone points "up" (= geographic north at rotation 0, since the marker uses
+    // map-aligned rotation); setRotation(heading) turns it to the compass bearing.
+    `<path class="gps-beam" d="M0 0 L -22 -32 A 39 39 0 0 1 22 -32 Z" fill="url(#${uid})" style="display:none"/>` +
+    `<circle r="8" fill="#2f6fed" stroke="#ffffff" stroke-width="3"/>` +
+    `</svg>`;
+  return { el, beam: el.querySelector(".gps-beam") as unknown as HTMLElement };
+}
+
+function wireLocate(handle: MapHandle): void {
   const locateBtn = document.getElementById("btn-locate")!;
+  let marker: maplibregl.Marker | null = null;
+  let beam: HTMLElement | null = null;
+  let watchId: string | null = null;
+  let stopHeading: (() => void) | null = null;
+  let tracking = false;
+  let firstFix = true;
+
+  const stop = () => {
+    tracking = false;
+    if (watchId) {
+      void clearWatch(watchId);
+      watchId = null;
+    }
+    stopHeading?.();
+    stopHeading = null;
+    marker?.remove();
+    marker = null;
+    beam = null;
+    locateBtn.classList.remove("active");
+  };
+
   locateBtn.addEventListener("click", async () => {
+    if (tracking) {
+      stop(); // toggle off
+      return;
+    }
+    tracking = true;
     locateBtn.classList.add("active");
+
+    if (!(await ensurePermission())) {
+      stop();
+      toast("Location permission denied.");
+      return;
+    }
+
+    const made = makeLocationEl();
+    beam = made.beam;
+    marker = new maplibregl.Marker({
+      element: made.el,
+      anchor: "center",
+      rotationAlignment: "map", // keep the beam pointing at a true bearing
+    });
+
+    firstFix = true;
+    let id: string;
     try {
-      if (!(await ensurePermission())) {
-        locateBtn.classList.remove("active");
-        return;
-      }
-      const fix = await getFix();
-      handle.map.easeTo({ center: [fix.lng, fix.lat], zoom: Math.max(handle.map.getZoom(), 13) });
-      if (!locateMarker) {
-        const el = document.createElement("div");
-        el.style.cssText =
-          "width:16px;height:16px;border-radius:50%;background:#2f9e57;border:2px solid #fff;box-shadow:0 0 0 4px rgba(47,158,87,.3)";
-        locateMarker = new maplibregl.Marker({ element: el });
-      }
-      locateMarker.setLngLat([fix.lng, fix.lat]).addTo(handle.map);
+      id = await watch((fix) => {
+        if (!tracking || !marker) return;
+        marker.setLngLat([fix.lng, fix.lat]).addTo(handle.map);
+        if (firstFix) {
+          firstFix = false;
+          handle.map.easeTo({
+            center: [fix.lng, fix.lat],
+            zoom: Math.max(handle.map.getZoom(), 15),
+          });
+        }
+      });
     } catch {
-      /* permission denied or timeout — ignore */
-    } finally {
-      locateBtn.classList.remove("active");
+      stop();
+      toast("Couldn’t get your location.");
+      return;
+    }
+    if (!tracking) {
+      // Toggled off while the watch was starting.
+      void clearWatch(id);
+      return;
+    }
+    watchId = id;
+
+    // Heading is best-effort: the dot still tracks without it.
+    stopHeading = await startHeading((deg) => {
+      marker?.setRotation(deg);
+      if (beam) beam.style.display = "block";
+    });
+    if (!tracking && stopHeading) {
+      stopHeading();
+      stopHeading = null;
     }
   });
 }
