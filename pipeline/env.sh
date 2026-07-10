@@ -26,8 +26,11 @@ export BASEMAP_MAXZOOM="${BASEMAP_MAXZOOM:-14}"
 # PROJ_AGE_1 >= VRI_MIN_AGE at build time to keep it feasible; the app's age/
 # height sliders filter the rest at runtime. Needs GDAL (ogr2ogr).
 export VRI_SRC="${VRI_SRC:-$OUT_DIR/../data/VRI.gdb}"
-export VRI_LAYER="${VRI_LAYER:-VEG_COMP_LYR_R1_POLY}"
+export VRI_LAYER="${VRI_LAYER:-}"                       # blank = auto-detect
 export VRI_MIN_AGE="${VRI_MIN_AGE:-140}"
+# BCGW layers are stored in BC Albers; -spat must be given in this SRS because
+# GDAL rejects -spat_srs alongside -sql.
+export VRI_NATIVE_SRS="${VRI_NATIVE_SRS:-EPSG:3005}"
 
 # planetiler JVM heap. Keep small on low-RAM boxes (e.g. a 4 GB Pi) — the basemap
 # step uses memory-mapped storage so most data lives off-heap on disk.
