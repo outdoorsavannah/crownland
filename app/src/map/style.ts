@@ -35,13 +35,17 @@ export const VRI_FLOOR_AGE = 140;
 export const VRI_MAX_AGE = 600;
 export const VRI_MAX_HEIGHT = 90;
 
+// Real VRI tiles (tiled from the geodatabase) carry age/height as "Mixed" —
+// tippecanoe emits some values as strings — while synthetic sample tiles carry
+// real Numbers. Coerce so both compare correctly; `to-number` with a 0 fallback
+// also turns a missing/null attribute into 0 (which fails the age floor, as it
+// should). Without this the filter never matches and the layer renders nothing.
+const vriAge = ["to-number", ["get", "age"], 0];
+const vriHeight = ["to-number", ["get", "height"], 0];
+
 /** MapLibre filter for the VRI fill from the two slider values. */
 export function vriFilter(minAge: number, minHeight: number): unknown[] {
-  return [
-    "all",
-    [">=", ["coalesce", ["get", "age"], 0], minAge],
-    [">=", ["coalesce", ["get", "height"], 0], minHeight],
-  ];
+  return ["all", [">=", vriAge, minAge], [">=", vriHeight, minHeight]];
 }
 
 // Big trees ship as a bundled, always-on point layer (BC BigTree Registry,
@@ -326,12 +330,12 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
         paint: {
           // Pale teal (young-old) → deep teal (ancient), distinct from crown green.
           "fill-color": [
-            "interpolate", ["linear"], ["coalesce", ["get", "age"], 0],
+            "interpolate", ["linear"], vriAge,
             140, "#bfe0d6",
             250, "#5bb3a2",
             400, "#1f7d6e",
             600, "#0d4f45",
-          ],
+          ] as never,
           "fill-opacity": 0.5,
         },
       },

@@ -109,6 +109,7 @@ tippecanoe \
   -o "$OUT" -f \
   -l vri \
   -Z "$VRI_MINZOOM" -z "$VRI_MAXZOOM" \
+  -T age:int -T height:float \
   --simplification=12 \
   --drop-densest-as-needed \
   --coalesce-densest-as-needed \
