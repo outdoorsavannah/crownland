@@ -198,29 +198,54 @@ export function showPinSheet(
     }
   }
 
-  // Saved plain pin → allow renaming.
+  // Saved plain pin → inline rename: a small "Edit" link next to the name that
+  // turns it into an editable field in place (no extra input/button bubbles).
   if (opts.saved && opts.onRename) {
-    const name = document.createElement("input");
-    name.type = "text";
-    name.className = "text-input";
-    name.value = opts.saved.name;
-    name.autocapitalize = "words";
-    name.style.marginTop = "12px";
+    const row = document.createElement("div");
+    row.className = "name-row";
 
-    const renameBtn = button("Save name");
-    renameBtn.style.marginTop = "10px";
-    renameBtn.style.width = "100%";
-    renameBtn.addEventListener("click", async () => {
-      const v = name.value.trim();
-      if (!v) return;
-      renameBtn.disabled = true;
-      await opts.onRename!(v);
-      sheet.close();
+    const nameText = document.createElement("span");
+    nameText.className = "name-text";
+    nameText.textContent = opts.saved.name;
+
+    const edit = document.createElement("button");
+    edit.className = "link-btn";
+    edit.textContent = "Edit";
+    edit.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "text-input";
+      input.value = nameText.textContent ?? "";
+      input.autocapitalize = "words";
+
+      const saveLink = document.createElement("button");
+      saveLink.className = "link-btn";
+      saveLink.textContent = "Save";
+
+      const commit = async () => {
+        const v = input.value.trim();
+        if (!v) return;
+        saveLink.disabled = true;
+        await opts.onRename!(v);
+        nameText.textContent = v;
+        sheet.setTitle(v);
+        row.replaceChildren(nameText, edit); // back to the display state
+      };
+      saveLink.addEventListener("click", () => void commit());
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          void commit();
+        }
+      });
+
+      row.replaceChildren(input, saveLink);
+      input.focus();
+      input.select();
     });
-    name.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") renameBtn.click();
-    });
-    sheet.body.append(name, renameBtn);
+
+    row.append(nameText, edit);
+    sheet.body.append(row);
   }
 
   if (opts.saved && opts.onDelete) {

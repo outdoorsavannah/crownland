@@ -10,6 +10,8 @@
 	<string>Uses the compass to show which way your phone is pointing on the map. Stays on your device.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Lets you attach photos from your library to a tree pin. Photos stay on your device.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Uses the camera to sight a tree's height. No photo or video is saved.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleDisplayName</key>

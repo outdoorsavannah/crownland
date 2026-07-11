@@ -521,3 +521,35 @@ input[type="range"] {
   cursor: pointer;
   padding: 0;
 }
+
+/* Inline "Edit" rename for a saved pin */
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.name-row .text-input {
+  flex: 1;
+}
+.name-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.link-btn {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+.link-btn:disabled {
+  opacity: 0.5;
+}
