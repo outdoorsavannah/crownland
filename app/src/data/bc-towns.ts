@@ -11,6 +11,7 @@ export interface Town {
 export const BC_TOWNS: Town[] = [
   { name: "Victoria", lat: 48.428, lng: -123.365 },
   { name: "Sooke", lat: 48.375, lng: -123.727 },
+  { name: "Port Renfrew", lat: 48.555, lng: -124.421 },
   { name: "Sidney", lat: 48.65, lng: -123.399 },
   { name: "Duncan", lat: 48.779, lng: -123.708 },
   { name: "Ladysmith", lat: 48.995, lng: -123.817 },
