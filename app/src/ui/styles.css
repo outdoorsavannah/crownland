@@ -522,24 +522,152 @@ input[type="range"] {
   padding: 0;
 }
 
-/* Inline "Edit" rename for a saved pin */
-.name-row {
+/* ---- Height measure tool ---- */
+.measure-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+.measure-hint {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 4px 0 4px;
+  line-height: 1.4;
+}
+.measure-angles {
+  margin-top: 12px;
+}
+.measure-live {
+  font-size: 40px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 10px;
+}
+.measure-angle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+.measure-angle-row > span {
+  font-variant-numeric: tabular-nums;
+}
+.measure-result {
+  margin-top: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+}
+.measure-result.bad {
+  color: var(--danger);
+}
+
+/* Live camera aiming overlay (Phase 2) */
+.cam-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+}
+.cam-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Native camera-preview renders behind the webview: make the app shell
+   transparent so the feed shows through under the HUD. */
+body.cam-active {
+  background: transparent;
+}
+body.cam-active #map,
+body.cam-active #controls,
+body.cam-active #coord-readout {
+  visibility: hidden;
+}
+.cam-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.cam-crosshair::before,
+.cam-crosshair::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+.cam-crosshair::before {
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+.cam-crosshair::after {
+  top: 50%;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  transform: translateY(-50%);
+}
+.cam-live {
+  position: absolute;
+  top: calc(16px + var(--safe-top));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 44px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+.cam-chips {
+  position: absolute;
+  top: calc(74px + var(--safe-top));
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 14px;
+  white-space: pre;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.cam-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(16px + var(--safe-bottom));
+  display: flex;
+  gap: 8px;
+}
+.cam-bar .btn {
+  flex: 1;
+}
+
+/* Inline "Edit" rename in the saved-pin title */
+.sheet h2.sheet-title-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 14px;
 }
-.name-row .text-input {
-  flex: 1;
-}
-.name-text {
+.sheet-title-row .name-text {
   flex: 1;
   min-width: 0;
-  font-size: 16px;
-  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.sheet-title-row .text-input {
+  flex: 1;
+  font-weight: 400;
 }
 .link-btn {
   flex: none;
@@ -547,6 +675,7 @@ input[type="range"] {
   border: none;
   color: var(--accent);
   font-size: 14px;
+  font-weight: 400;
   cursor: pointer;
   padding: 4px 2px;
 }

@@ -2,6 +2,18 @@ import { openSheet, kvGrid, button } from "./sheet";
 import { fmtDecimal, fmtDMS } from "./coords";
 import { TREE_FIELD_LABELS, type TreeFields, type SavedPin } from "../data/saved-pins";
 import { pickAndStorePhotos, photoUrl, deletePinPhotos } from "../data/photos";
+import { openHeightSheet } from "./height-sheet";
+import { BC_TREE_SPECIES } from "../data/bc-species";
+import { bigTreeScore } from "../measure/bigtree-score";
+import { nearestTown } from "../data/bc-towns";
+import type { ElevationSampler } from "../measure/elevation";
+
+/** Local date as YYYY-MM-DD for a <input type="date"> default. */
+function today(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 // Add / edit a tree pin: the BC BigTree Registry fields plus attached photos.
 // Reused for both creating a new tree and editing an existing one.
@@ -24,6 +36,10 @@ interface TreeFormOpts {
   pinId: string;
   /** Existing record when editing; absent when creating. */
   initial?: SavedPin;
+  /** Seed the nickname field on a new tree (from the "Name this pin" text). */
+  initialNickname?: string;
+  /** Samples elevation from the pack's DEM; used to auto-fill an empty field. */
+  getElevation?: ElevationSampler;
   onSubmit: (fields: TreeFields, photos: string[], name: string) => void | Promise<void>;
   onDelete?: () => void | Promise<void>;
 }
@@ -51,8 +67,12 @@ export function openTreeForm(
     ]),
   );
 
+  // Round to millimetre precision (values are in metres).
+  const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
   // One labelled input per registry field.
   const inputs = new Map<keyof TreeFields, HTMLInputElement>();
+  let circInput: HTMLInputElement | null = null; // helper above DBH (not stored)
   for (const [key, label] of TREE_FIELD_LABELS) {
     const field = document.createElement("label");
     field.className = "tree-field";
@@ -60,12 +80,116 @@ export function openTreeForm(
     cap.textContent = label;
     const input = document.createElement("input");
     input.className = "text-input";
-    input.value = opts.initial?.tree?.[key] ?? "";
+    input.value =
+      opts.initial?.tree?.[key] ??
+      (key === "nickname"
+        ? opts.initialNickname ?? ""
+        : key === "measured" && !editing
+          ? today() // new tree: default "Last measured" to today
+          : "");
     if (NUMERIC.has(key)) input.inputMode = "decimal";
     if (key === "species" || key === "nickname" || key === "town") input.autocapitalize = "words";
+
+    // Last measured → native date picker.
+    if (key === "measured") input.type = "date";
+
+    // Score is derived from height + DBH + crown, so it is read-only/computed.
+    if (key === "score") {
+      input.readOnly = true;
+      input.placeholder = "auto from height, DBH, crown";
+    }
+
+    // Species → free text with a dropdown of common BC species. The datalist
+    // lives inside the sheet, so it is removed when the sheet closes.
+    if (key === "species") {
+      const listId = "species-options";
+      input.setAttribute("list", listId);
+      const dl = document.createElement("datalist");
+      dl.id = listId;
+      for (const s of BC_TREE_SPECIES) {
+        const o = document.createElement("option");
+        o.value = s;
+        dl.append(o);
+      }
+      field.append(dl);
+    }
+
+    // Circumference helper directly above DBH: computes DBH = circumference / π.
+    if (key === "dbh_m") {
+      const cField = document.createElement("label");
+      cField.className = "tree-field";
+      const cCap = document.createElement("span");
+      cCap.textContent = "Circumference (m)";
+      circInput = document.createElement("input");
+      circInput.className = "text-input";
+      circInput.inputMode = "decimal";
+      circInput.placeholder = "→ fills DBH";
+      const dbh0 = opts.initial?.tree?.dbh_m;
+      if (dbh0) circInput.value = String(round3(parseFloat(dbh0) * Math.PI));
+      cField.append(cCap, circInput);
+      sheet.body.append(cField);
+    }
+
     field.append(cap, input);
     inputs.set(key, input);
     sheet.body.append(field);
+
+    // Height gets a measure tool that fills the input via the device tilt sensor.
+    if (key === "height_m") {
+      const measure = button("Measure 📐");
+      measure.className += " measure-btn";
+      measure.addEventListener("click", () =>
+        openHeightSheet((h) => {
+          input.value = h;
+          input.dispatchEvent(new Event("input")); // refresh the computed score
+        }),
+      );
+      sheet.body.append(measure);
+    }
+  }
+
+  // Keep the BC BigTree score in sync with height + DBH + crown as they change.
+  const scoreInput = inputs.get("score")!;
+  const recomputeScore = () => {
+    const s = bigTreeScore(
+      parseFloat(inputs.get("height_m")!.value),
+      parseFloat(inputs.get("dbh_m")!.value),
+      parseFloat(inputs.get("crown_m")!.value),
+    );
+    if (s !== null) scoreInput.value = String(s);
+  };
+  for (const k of ["height_m", "dbh_m", "crown_m"] as const) {
+    inputs.get(k)!.addEventListener("input", recomputeScore);
+  }
+
+  // Keep circumference and DBH in sync (DBH = circumference / π), so either can
+  // be entered. Cross-updates set `.value` directly (no event) to avoid a loop.
+  const dbhInput = inputs.get("dbh_m")!;
+  if (circInput) {
+    const circ = circInput;
+    circ.addEventListener("input", () => {
+      const c = parseFloat(circ.value);
+      dbhInput.value = Number.isFinite(c) ? String(round3(c / Math.PI)) : "";
+      recomputeScore();
+    });
+    dbhInput.addEventListener("input", () => {
+      const d = parseFloat(dbhInput.value);
+      circ.value = Number.isFinite(d) ? String(round3(d * Math.PI)) : "";
+    });
+  }
+
+  // Auto-fill location-derived fields when they are empty (non-destructive:
+  // never overwrites a value the user or registry already provided).
+  const townInput = inputs.get("town")!;
+  if (!townInput.value.trim()) {
+    const near = nearestTown(lngLat.lat, lngLat.lng);
+    if (near) townInput.value = near.name;
+  }
+  const elevInput = inputs.get("elevation_m")!;
+  if (!elevInput.value.trim() && opts.getElevation) {
+    void opts.getElevation(lngLat.lng, lngLat.lat).then((m) => {
+      if (m !== null && !elevInput.value.trim()) elevInput.value = String(Math.round(m));
+    });
   }
 
   // ---- Photos ----

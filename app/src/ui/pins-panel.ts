@@ -12,16 +12,37 @@ export async function openSavedPins(
 ): Promise<void> {
   const sheet = openSheet("Saved pins");
 
+  // Export lives at the top so it is reachable without scrolling past the list.
+  const exportBtn = button("Export all (GeoJSON + CSV)");
+  exportBtn.style.width = "100%";
+  exportBtn.addEventListener("click", async () => {
+    exportBtn.disabled = true;
+    try {
+      const n = await exportPins();
+      toast(n ? `Exported ${n} pin${n === 1 ? "" : "s"}` : "Nothing to export");
+    } catch {
+      toast("Export failed");
+    }
+    exportBtn.disabled = false;
+  });
+
+  const list = document.createElement("div");
+  list.style.marginTop = "14px";
+  sheet.body.append(exportBtn, list);
+
   const render = async () => {
-    sheet.body.innerHTML = "";
+    list.innerHTML = "";
     const pins = (await loadPins()).sort((a, b) => b.createdAt - a.createdAt);
+
+    // Nothing to export until there is at least one pin.
+    exportBtn.style.display = pins.length ? "" : "none";
 
     if (!pins.length) {
       const p = document.createElement("p");
       p.className = "disclaimer";
       p.textContent =
         "No saved pins yet. Long-press the map (or search coordinates), then tap “Save pin”.";
-      sheet.body.append(p);
+      list.append(p);
       return;
     }
 
@@ -53,23 +74,8 @@ export async function openSavedPins(
       });
 
       row.append(go, del);
-      sheet.body.append(row);
+      list.append(row);
     }
-
-    const exportBtn = button("Export all (GeoJSON + CSV)");
-    exportBtn.style.marginTop = "14px";
-    exportBtn.style.width = "100%";
-    exportBtn.addEventListener("click", async () => {
-      exportBtn.disabled = true;
-      try {
-        const n = await exportPins();
-        toast(n ? `Exported ${n} pin${n === 1 ? "" : "s"}` : "Nothing to export");
-      } catch {
-        toast("Export failed");
-      }
-      exportBtn.disabled = false;
-    });
-    sheet.body.append(exportBtn);
   };
 
   await render();

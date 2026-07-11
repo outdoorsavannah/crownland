@@ -16,6 +16,7 @@ import { fmtDecimal } from "./ui/coords";
 import { archiveExists } from "./data/storage";
 import { loadPins, addPin, removePin, updatePin, newPinId, type SavedPin } from "./data/saved-pins";
 import { openTreeForm, treeName } from "./ui/tree-form";
+import { createElevationSampler, type ElevationSampler } from "./measure/elevation";
 import { toast } from "./ui/toast";
 
 const LAST_PACK_KEY = "last-pack-id";
@@ -105,6 +106,9 @@ async function packPresent(pack: Pack): Promise<boolean> {
 
 async function bootMap(manifest: Manifest, pack: Pack): Promise<void> {
   const handle = await initMap(pack);
+
+  const terrain = pack.archives.terrain;
+  if (terrain) elevationSampler = await createElevationSampler(terrain.file, !!terrain.bundled);
 
   const prefs = await loadLayerPrefs();
   applyLayerPrefs(handle, prefs);
@@ -337,6 +341,7 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
 // ---- Dropped pins + saved pins ----
 let pinMarker: maplibregl.Marker | null = null; // transient (unsaved) pin
 let savedMarkers: maplibregl.Marker[] = [];
+let elevationSampler: ElevationSampler | null = null; // reads the pack's DEM
 
 function makePinEl(color: string): HTMLElement {
   const el = document.createElement("div");
@@ -373,10 +378,12 @@ function dropPinAndOpen(map: maplibregl.Map, lngLat: { lng: number; lat: number 
       await refreshSavedPins(map);
       toast("Pin saved");
     },
-    onSaveTree: () => {
+    onSaveTree: (pinName) => {
       const id = newPinId();
       openTreeForm(lngLat, {
         pinId: id,
+        initialNickname: pinName,
+        getElevation: elevationSampler ?? undefined,
         onSubmit: async (tree, photos, name) => {
           await addPin({ id, kind: "tree", name, lng: lngLat.lng, lat: lngLat.lat, tree, photos });
           pinMarker?.remove();
@@ -432,6 +439,7 @@ function openSavedTree(map: maplibregl.Map, pin: SavedPin): void {
     {
       pinId: pin.id,
       initial: pin,
+      getElevation: elevationSampler ?? undefined,
       onSubmit: async (tree, photos, name) => {
         await updatePin(pin.id, { tree, photos, name: name || treeName(tree) });
         await refreshSavedPins(map);

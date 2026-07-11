@@ -126,8 +126,9 @@ interface PinSheetOpts {
   saved?: { id: string; name: string };
   /** Called with the entered name to persist a new pin (shows Save controls). */
   onSave?: (name: string) => void | Promise<void>;
-  /** New dropped pin only: open the "Save tree" form instead. */
-  onSaveTree?: () => void;
+  /** New dropped pin only: open the "Save tree" form instead. Receives the
+   *  entered pin name (if any) so it can seed the tree's nickname. */
+  onSaveTree?: (name: string) => void;
   /** Saved pin only: persist a renamed pin. */
   onRename?: (name: string) => void | Promise<void>;
   /** Called to delete the saved pin. */
@@ -192,17 +193,18 @@ export function showPinSheet(
       treeBtn.style.width = "100%";
       treeBtn.addEventListener("click", () => {
         sheet.close();
-        opts.onSaveTree!();
+        opts.onSaveTree!(name.value.trim());
       });
       sheet.body.append(treeBtn);
     }
   }
 
-  // Saved plain pin → inline rename: a small "Edit" link next to the name that
-  // turns it into an editable field in place (no extra input/button bubbles).
+  // Saved plain pin → rename from the title: a small "Edit" link beside the name
+  // that turns the title into an editable field in place.
   if (opts.saved && opts.onRename) {
-    const row = document.createElement("div");
-    row.className = "name-row";
+    const h2 = sheet.el.querySelector("h2")!;
+    h2.classList.add("sheet-title-row");
+    h2.textContent = "";
 
     const nameText = document.createElement("span");
     nameText.className = "name-text";
@@ -228,8 +230,7 @@ export function showPinSheet(
         saveLink.disabled = true;
         await opts.onRename!(v);
         nameText.textContent = v;
-        sheet.setTitle(v);
-        row.replaceChildren(nameText, edit); // back to the display state
+        h2.replaceChildren(nameText, edit); // back to the display state
       };
       saveLink.addEventListener("click", () => void commit());
       input.addEventListener("keydown", (e) => {
@@ -239,13 +240,12 @@ export function showPinSheet(
         }
       });
 
-      row.replaceChildren(input, saveLink);
+      h2.replaceChildren(input, saveLink);
       input.focus();
       input.select();
     });
 
-    row.append(nameText, edit);
-    sheet.body.append(row);
+    h2.append(nameText, edit);
   }
 
   if (opts.saved && opts.onDelete) {
