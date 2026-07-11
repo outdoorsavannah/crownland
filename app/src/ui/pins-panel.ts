@@ -1,6 +1,8 @@
-import { openSheet } from "./sheet";
+import { openSheet, button } from "./sheet";
 import { loadPins, type SavedPin } from "../data/saved-pins";
+import { exportPins } from "../data/pin-export";
 import { fmtDecimal } from "./coords";
+import { toast } from "./toast";
 
 // "Saved pins" list sheet (spec §9 extension). Tap a pin to fly to it; ✕ deletes.
 
@@ -31,7 +33,7 @@ export async function openSavedPins(
       go.className = "pin-go";
       const nm = document.createElement("div");
       nm.className = "pin-name";
-      nm.textContent = pin.name;
+      nm.textContent = pin.kind === "tree" ? `🌲 ${pin.name}` : pin.name;
       const co = document.createElement("div");
       co.className = "pin-coord";
       co.textContent = fmtDecimal(pin.lat, pin.lng);
@@ -53,6 +55,21 @@ export async function openSavedPins(
       row.append(go, del);
       sheet.body.append(row);
     }
+
+    const exportBtn = button("Export all (GeoJSON + CSV)");
+    exportBtn.style.marginTop = "14px";
+    exportBtn.style.width = "100%";
+    exportBtn.addEventListener("click", async () => {
+      exportBtn.disabled = true;
+      try {
+        const n = await exportPins();
+        toast(n ? `Exported ${n} pin${n === 1 ? "" : "s"}` : "Nothing to export");
+      } catch {
+        toast("Export failed");
+      }
+      exportBtn.disabled = false;
+    });
+    sheet.body.append(exportBtn);
   };
 
   await render();

@@ -126,6 +126,10 @@ interface PinSheetOpts {
   saved?: { id: string; name: string };
   /** Called with the entered name to persist a new pin (shows Save controls). */
   onSave?: (name: string) => void | Promise<void>;
+  /** New dropped pin only: open the "Save tree" form instead. */
+  onSaveTree?: () => void;
+  /** Saved pin only: persist a renamed pin. */
+  onRename?: (name: string) => void | Promise<void>;
   /** Called to delete the saved pin. */
   onDelete?: () => void | Promise<void>;
 }
@@ -181,6 +185,42 @@ export function showPinSheet(
       if (e.key === "Enter") saveBtn.click();
     });
     sheet.body.append(name, saveBtn);
+
+    if (opts.onSaveTree) {
+      const treeBtn = button("Save tree 🌲");
+      treeBtn.style.marginTop = "10px";
+      treeBtn.style.width = "100%";
+      treeBtn.addEventListener("click", () => {
+        sheet.close();
+        opts.onSaveTree!();
+      });
+      sheet.body.append(treeBtn);
+    }
+  }
+
+  // Saved plain pin → allow renaming.
+  if (opts.saved && opts.onRename) {
+    const name = document.createElement("input");
+    name.type = "text";
+    name.className = "text-input";
+    name.value = opts.saved.name;
+    name.autocapitalize = "words";
+    name.style.marginTop = "12px";
+
+    const renameBtn = button("Save name");
+    renameBtn.style.marginTop = "10px";
+    renameBtn.style.width = "100%";
+    renameBtn.addEventListener("click", async () => {
+      const v = name.value.trim();
+      if (!v) return;
+      renameBtn.disabled = true;
+      await opts.onRename!(v);
+      sheet.close();
+    });
+    name.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") renameBtn.click();
+    });
+    sheet.body.append(name, renameBtn);
   }
 
   if (opts.saved && opts.onDelete) {

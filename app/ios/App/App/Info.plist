@@ -8,6 +8,8 @@
 	<string>Shows your current position on the offline map. Location is used only while the app is open and never leaves your device.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Uses the compass to show which way your phone is pointing on the map. Stays on your device.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Lets you attach photos from your library to a tree pin. Photos stay on your device.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleDisplayName</key>

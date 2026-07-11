@@ -56,7 +56,8 @@ function assign(
  * otherwise. This is the app's only "search" — it has no online geocoder.
  */
 export function parseCoordinates(input: string): LatLng | null {
-  const s = input.trim();
+  // Tolerate coordinates wrapped in parentheses/brackets, e.g. "(46.5, 33.5)".
+  const s = input.trim().replace(/[()[\]]/g, " ").trim();
   if (!s) return null;
 
   // DMS with an explicit hemisphere letter anchoring each coordinate.

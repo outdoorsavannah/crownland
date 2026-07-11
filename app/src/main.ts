@@ -14,7 +14,8 @@ import { ensurePermission, watch, clearWatch } from "./location/geolocation";
 import { startHeading } from "./location/heading";
 import { fmtDecimal } from "./ui/coords";
 import { archiveExists } from "./data/storage";
-import { loadPins, addPin, removePin } from "./data/saved-pins";
+import { loadPins, addPin, removePin, updatePin, newPinId, type SavedPin } from "./data/saved-pins";
+import { openTreeForm, treeName } from "./ui/tree-form";
 import { toast } from "./ui/toast";
 
 const LAST_PACK_KEY = "last-pack-id";
@@ -345,7 +346,15 @@ function makePinEl(color: string): HTMLElement {
   return el;
 }
 
-/** Drop a transient (amber) pin and open its sheet with a "Save pin" action. */
+/** Tree marker: a 🌲 emoji so tree pins read differently from plain pins. */
+function makeTreeEl(): HTMLElement {
+  const el = document.createElement("div");
+  el.className = "tree-marker";
+  el.textContent = "🌲";
+  return el;
+}
+
+/** Drop a transient (amber) pin and open its sheet: "Save pin" or "Save tree". */
 function dropPinAndOpen(map: maplibregl.Map, lngLat: { lng: number; lat: number }): void {
   pinMarker?.remove();
   pinMarker = new maplibregl.Marker({ element: makePinEl("#e0a53a"), anchor: "bottom" })
@@ -354,6 +363,7 @@ function dropPinAndOpen(map: maplibregl.Map, lngLat: { lng: number; lat: number 
   showPinSheet(lngLat, {
     onSave: async (name) => {
       await addPin({
+        kind: "pin",
         name: name || `Pin ${fmtDecimal(lngLat.lat, lngLat.lng)}`,
         lng: lngLat.lng,
         lat: lngLat.lat,
@@ -363,33 +373,77 @@ function dropPinAndOpen(map: maplibregl.Map, lngLat: { lng: number; lat: number 
       await refreshSavedPins(map);
       toast("Pin saved");
     },
+    onSaveTree: () => {
+      const id = newPinId();
+      openTreeForm(lngLat, {
+        pinId: id,
+        onSubmit: async (tree, photos, name) => {
+          await addPin({ id, kind: "tree", name, lng: lngLat.lng, lat: lngLat.lat, tree, photos });
+          pinMarker?.remove();
+          pinMarker = null;
+          await refreshSavedPins(map);
+          toast("Tree saved 🌲");
+        },
+      });
+    },
   });
 }
 
-/** Re-render all saved pins as persistent (green) markers. */
+/** Re-render all saved pins/trees as persistent markers. */
 async function refreshSavedPins(map: maplibregl.Map): Promise<void> {
   for (const m of savedMarkers) m.remove();
   savedMarkers = [];
   for (const pin of await loadPins()) {
-    const marker = new maplibregl.Marker({ element: makePinEl("#2f9e57"), anchor: "bottom" })
+    const el = pin.kind === "tree" ? makeTreeEl() : makePinEl("#2f9e57");
+    const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
       .setLngLat([pin.lng, pin.lat])
       .addTo(map);
     marker.getElement().addEventListener("click", (ev) => {
       ev.stopPropagation();
-      showPinSheet(
-        { lng: pin.lng, lat: pin.lat },
-        {
-          saved: { id: pin.id, name: pin.name },
-          onDelete: async () => {
-            await removePin(pin.id);
-            await refreshSavedPins(map);
-            toast("Pin deleted");
+      if (pin.kind === "tree") {
+        openSavedTree(map, pin);
+      } else {
+        showPinSheet(
+          { lng: pin.lng, lat: pin.lat },
+          {
+            saved: { id: pin.id, name: pin.name },
+            onRename: async (name) => {
+              await updatePin(pin.id, { name });
+              await refreshSavedPins(map);
+              toast("Pin renamed");
+            },
+            onDelete: async () => {
+              await removePin(pin.id);
+              await refreshSavedPins(map);
+              toast("Pin deleted");
+            },
           },
-        },
-      );
+        );
+      }
     });
     savedMarkers.push(marker);
   }
+}
+
+/** Open a saved tree in the tree form for editing (fields + photos) or delete. */
+function openSavedTree(map: maplibregl.Map, pin: SavedPin): void {
+  openTreeForm(
+    { lng: pin.lng, lat: pin.lat },
+    {
+      pinId: pin.id,
+      initial: pin,
+      onSubmit: async (tree, photos, name) => {
+        await updatePin(pin.id, { tree, photos, name: name || treeName(tree) });
+        await refreshSavedPins(map);
+        toast("Tree updated 🌲");
+      },
+      onDelete: async () => {
+        await removePin(pin.id);
+        await refreshSavedPins(map);
+        toast("Tree deleted");
+      },
+    },
+  );
 }
 
 /** Long-press (touch) / long mouse-down that doesn't turn into a drag. */

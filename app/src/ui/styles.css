@@ -467,3 +467,57 @@ input[type="range"] {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+/* ---- Tree pins (marker + form) ---- */
+.tree-marker {
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+.tree-field {
+  display: block;
+  margin-top: 12px;
+}
+.tree-field > span,
+.tree-field-cap {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.tree-field-cap {
+  margin-top: 14px;
+}
+.tree-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tree-photo {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+.tree-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.tree-photo-rm {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  line-height: 20px;
+  cursor: pointer;
+  padding: 0;
+}
