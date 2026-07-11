@@ -39,3 +39,5 @@ app/android/
 
 # Planning doc — not part of the shipped repo
 bc-crownland-app-spec.md
+# Local Claude Code project instructions — not part of the shipped repo
+CLAUDE.md
