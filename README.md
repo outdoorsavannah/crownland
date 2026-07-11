@@ -1,10 +1,46 @@
-# BC Crown Land — Offline Map (Capacitor, iOS + Android)
+# BC Big Trees & Old Growth — Offline Map (Capacitor, iOS + Android)
 
-An **offline-first** mobile app that shows British Columbia crown/public land
-polygons over an open-source basemap. After a one-time data download, it works
-with **no network** (airplane mode). Tap a parcel for its attributes, read GPS
-position and coordinates. Built from public BC open-data sources — a personal-use
-re-creation of crownlandmap.ca, **not** authoritative for legal boundaries.
+An **offline-first** mobile map for finding and recording British Columbia's
+**big trees and old-growth forest** in the field. It overlays the BC BigTree
+Registry, legal and proposed old-growth reserves (OGMAs), and old-growth-by-age
+from VRI on an open-source basemap — with crown-land parcels and forest tenures
+for land-status context.
+
+After a one-time data download it works with **no network** (airplane mode):
+browse the layers, drop and record tree pins (species, measurements, photos),
+**measure tree height with the phone's tilt sensor**, and export your finds. Built
+from public BC open-data sources; **not** authoritative for legal boundaries.
+
+> Heritage note: this began as a personal-use offline crown-land parcel viewer
+> (à la crownlandmap.ca). Crown land and tenures are still here as context
+> layers, but the project's focus is now big trees and old growth.
+
+## What it does
+
+### Map layers (toggle in the Layers panel)
+
+- **Big trees (registry)** — BC BigTree Registry champion points, bundled with the
+  app and available on every pack. Tap for species, dimensions and score.
+- **Old growth — legal (OGMA)** and **Old growth — proposed** — legal old-growth
+  management areas plus non-legal / proposed reserves.
+- **Old growth by age (VRI)** — forest polygons from the Vegetation Resources
+  Inventory, filtered live by two sliders (**min age**, **min height**).
+- **Crown land** and **Tenures** — public-land parcels and forest tenures for
+  context, with an adjustable crown-fill opacity.
+- **Hillshade** — terrain relief from a Terrarium-encoded DEM.
+
+### Field toolkit (record your own trees)
+
+- **Save tree pins** with the BC BigTree Registry fields (species, height, DBH,
+  crown spread, town, elevation, …) plus attached **photos**.
+- **Measure height** without a clinometer: a two-angle tilt-sensor hypsometer with
+  an optional **live-camera crosshair** for precise aiming.
+- **Auto-computed BigTree score** from height + DBH + crown (read-only).
+- **Circumference → DBH** helper (kept in two-way sync).
+- **Auto-filled elevation** sampled from the bundled DEM and **nearest town** from a
+  bundled BC gazetteer — both filled only when left blank.
+- **Species dropdown** of common BC trees (free text still allowed).
+- **Export** all saved pins as **GeoJSON + CSV** to share off-device.
 
 ## Repo layout
 
@@ -21,7 +57,9 @@ The two are deliberately separate (spec §4): the pipeline produces the shipped
 - Capacitor 6, TypeScript, Vite
 - MapLibre GL JS renderer
 - PMTiles single-file archives via the `pmtiles` protocol (no tile server)
-- `@capacitor/geolocation`, `filesystem`, `preferences`, `network`
+- `@capacitor/geolocation`, `filesystem`, `preferences`, `network`, `share`
+- `@capacitor/camera` + `motion` and `@capacitor-community/camera-preview` — power
+  the tree photos and the tilt/camera height-measurement tool
 
 ## Quick start (desktop dev — milestone 1)
 
@@ -54,9 +92,15 @@ Filled in from `pipeline/05_style_manifest.sh` output after a real build:
 
 | Archive | Zoom | Size |
 |---------|------|------|
-| `crown-bc.pmtiles`   | 5–14 | _TBD_ |
-| `tenures-bc.pmtiles` | 6–14 | _TBD_ |
-| `basemap-bc.pmtiles` | 0–14 | _TBD_ |
+| `oldgrowth-bc.pmtiles` | 5–14 | _TBD_ |
+| `vri-bc.pmtiles`       | 5–14 | _TBD_ |
+| `crown-bc.pmtiles`     | 5–14 | _TBD_ |
+| `tenures-bc.pmtiles`   | 6–14 | _TBD_ |
+| `terrain-bc.pmtiles`   | 0–12 | _TBD_ |
+| `basemap-bc.pmtiles`   | 0–14 | _TBD_ |
+
+`bigtrees.pmtiles` (BC BigTree Registry points) ships bundled in the app, not per
+pack.
 
 ## Offline / architecture notes
 
@@ -75,9 +119,11 @@ Filled in from `pipeline/05_style_manifest.sh` output after a real build:
 
 The `ios/` project is **generated and configured** (committed to the repo):
 
-- Capacitor 6.2 + plugins (Filesystem, Geolocation, Network, Preferences) via
-  CocoaPods (`ios/App/Podfile`).
-- `Info.plist`: `NSLocationWhenInUseUsageDescription` (when-in-use GPS, §11) and
+- Capacitor 6.2 + plugins (Filesystem, Geolocation, Network, Preferences, Camera,
+  Motion, CameraPreview, Share) via CocoaPods (`ios/App/Podfile`).
+- `Info.plist`: `NSLocationWhenInUseUsageDescription` (when-in-use GPS, §11),
+  `NSMotionUsageDescription` (tilt sensor for height measurement),
+  `NSCameraUsageDescription` (camera aiming) and
   `ITSAppUsesNonExemptEncryption=false` (skips the export-compliance prompt).
 - `appId` = `ca.crownland.offline`.
 - Sample dev PMTiles are excluded from the device bundle (Vite `strip-sample-packs`).
