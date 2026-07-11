@@ -108,14 +108,15 @@ pack.
   URL and glyphs are local. `src/data/offline-guard.ts` throws if any source
   points at a remote host — enforced before the style is handed to MapLibre.
 - **PMTiles + Range requests** (spec §7): archives live in the Filesystem *Data*
-  dir and load via `Capacitor.convertFileSrc()`. Local-scheme Range support is
-  the key device risk (milestone 2) — verify on a real device; fall back to an
-  embedded static file server if a platform doesn't honor Range on local files.
+  dir and load via `Capacitor.convertFileSrc()`. Local-scheme Range support
+  (milestone 2 — the key device risk) is **confirmed working on device**: packs
+  load and tiles render offline, so the embedded-HTTP-server fallback was never
+  needed.
 - **Download manager** (spec §8): `src/data/download-manager.ts` does manifest
   fetch (bundled fallback), region packs, HTTP-Range resume, SHA-256 verify, and
   version tracking via Preferences.
 
-## iOS (native) — ready to build
+## iOS (native) — builds & runs on device
 
 The `ios/` project is **generated and configured** (committed to the repo):
 
@@ -144,14 +145,13 @@ Gotchas hit while setting this up (already handled, noted for CI):
 - `cap sync`'s trailing `pod install` needs full Xcode; Command Line Tools alone
   copy assets fine but can't run that step.
 
-### ⚠️ Milestone-2 device check (spec §7/§11) — must verify on a real device
+### Milestone-2 device check (spec §7/§11) — ✅ verified
 
 PMTiles reads issue HTTP **Range** requests against local files served via
-`Capacitor.convertFileSrc()`. Capacitor's iOS WKWebView scheme handler supports
-Range for local files, so this is *expected* to work — but it is the key risk and
-is **not verifiable in the simulator/CLT here**. On first device run, load a pack
-and confirm tiles render. If they don't, fall back to an embedded local HTTP
-server plugin (serve packs over `http://localhost` with Range) — see spec §7.
+`Capacitor.convertFileSrc()` — the key device risk called out in the spec. On a
+real device it **works**: Capacitor's iOS WKWebView scheme handler honors Range
+for local files, so packs load and tiles render in airplane mode. The
+embedded-local-HTTP-server fallback (spec §7) proved unnecessary.
 
 ## Android (not yet generated)
 
@@ -166,14 +166,14 @@ Then add to `android/app/src/main/AndroidManifest.xml`:
 
 | # | Criterion | Status |
 |---|-----------|--------|
-| 1 | Airplane mode: basemap + crown render | ✅ arch (local pmtiles + offline guard); verify on device |
-| 2 | Tap feature → attributes + coordinates | ✅ verified in dev |
-| 3 | GPS "locate me", no network | ✅ wired (`location/`); verify on device |
-| 4 | Long-press → decimal + DMS + copy | ✅ verified in dev |
+| 1 | Airplane mode: basemap + crown render | ✅ verified on device (local pmtiles + offline guard) |
+| 2 | Tap feature → attributes + coordinates | ✅ verified |
+| 3 | GPS "locate me", no network | ✅ verified on device |
+| 4 | Long-press → decimal + DMS + copy | ✅ verified |
 | 5 | Smooth province-scale pan/zoom | ✅ vector tiles + pmtiles |
-| 6 | Attribution + disclaimer present | ✅ verified in dev |
+| 6 | Attribution + disclaimer present | ✅ verified |
 | 7 | Archive sizes documented | ⏳ after a real pipeline run |
-| 8 | Runs on physical iOS + Android | ⏳ device build |
+| 8 | Runs on physical iOS + Android | ✅ iOS verified on device; Android not yet generated |
 
 ## Disclaimer
 
