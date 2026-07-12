@@ -123,35 +123,6 @@ async function bootMap(manifest: Manifest, pack: Pack): Promise<void> {
   }
 }
 
-// TEMP DIAGNOSTIC HUD — shows the live sheet stack + recent open/close actions so
-// a screenshot pins down the "menu underneath" issue. Tap it to hide. Remove me.
-function installSheetDebugHud(): void {
-  if (document.getElementById("sheet-dbg")) return;
-  const hud = document.createElement("div");
-  hud.id = "sheet-dbg";
-  hud.style.cssText =
-    "position:fixed;top:calc(4px + env(safe-area-inset-top,0));left:4px;z-index:9999;" +
-    "background:rgba(0,0,0,.78);color:#5f5;font:10px/1.35 ui-monospace,monospace;" +
-    "padding:5px 7px;border-radius:6px;max-width:72vw;white-space:pre-wrap;pointer-events:auto";
-  hud.addEventListener("click", () => hud.remove());
-  document.body.appendChild(hud);
-  const w = window as unknown as { __slog?: string[] };
-  setInterval(() => {
-    const sheets = [...document.querySelectorAll("#ui-root .sheet")].map((s) => {
-      const t = (s as HTMLElement).style.transform || "none";
-      const hidden = s.classList.contains("hidden") ? "HIDDEN" : "shown";
-      return `• ${s.querySelector("h2")?.textContent ?? "?"} [${hidden}] tf=${t}`;
-    });
-    const bd = document.querySelectorAll("#ui-root .sheet-backdrop").length;
-    const cam = document.querySelector(".cam-overlay") ? " +CAM" : "";
-    hud.textContent =
-      `sheets=${sheets.length} backdrops=${bd}${cam}\n` +
-      sheets.join("\n") +
-      "\n— log —\n" +
-      (w.__slog ?? []).join("\n");
-  }, 250);
-}
-
 function wireControls(
   handle: MapHandle,
   manifest: Manifest,
@@ -531,7 +502,6 @@ function wireLongPress(
 
 // Safety net: if any boot step throws (or an async rejection escapes), show the
 // error overlay instead of leaving the user on a black screen.
-installSheetDebugHud(); // TEMP: diagnose the "menu underneath" report
 main().catch((err) => showBootError(err instanceof Error ? err.message : String(err)));
 window.addEventListener("unhandledrejection", (e) => {
   if (document.getElementById("boot")) {

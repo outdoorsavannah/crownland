@@ -10,16 +10,7 @@ export interface Sheet {
 
 const root = () => document.getElementById("ui-root")!;
 
-// TEMP DIAGNOSTIC: ring buffer of sheet open/close actions (see the debug HUD in
-// main.ts). Remove once the "menu underneath" issue is pinned down.
-function slog(action: string, title: string): void {
-  const w = window as unknown as { __slog?: string[] };
-  (w.__slog ??= []).push(`${new Date().toISOString().slice(14, 23)} ${action} ${title}`);
-  if (w.__slog.length > 8) w.__slog.shift();
-}
-
 export function openSheet(title: string, onClose?: () => void): Sheet {
-  slog("open", title);
   const backdrop = document.createElement("div");
   backdrop.className = "sheet-backdrop";
 
@@ -43,7 +34,6 @@ export function openSheet(title: string, onClose?: () => void): Sheet {
   const close = () => {
     if (closed) return;
     closed = true;
-    slog("close", title);
     // Force the slide-off inline: a drag may have left an inline transform, which
     // would otherwise override `.sheet.hidden` and leave the sheet visible.
     sheet.style.transition = "transform 0.2s ease";
