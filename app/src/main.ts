@@ -470,10 +470,18 @@ function wireLongPress(
     start = null;
   };
 
+  // Never drop a pin while a sheet is open (belt-and-braces: the backdrop already
+  // blocks the map, but this stops any stray long-press launching a pin menu
+  // underneath an open sheet).
+  const fire = (lngLat: { lng: number; lat: number }) => {
+    if (document.querySelector("#ui-root .sheet")) return;
+    cb(lngLat);
+  };
+
   map.on("touchstart", (e) => {
     if (e.originalEvent.touches.length !== 1) return cancel();
     start = e.point;
-    timer = setTimeout(() => cb(e.lngLat), HOLD_MS);
+    timer = setTimeout(() => fire(e.lngLat), HOLD_MS);
   });
   map.on("touchmove", (e) => {
     if (start && e.point.dist(start) > MOVE_TOL) cancel();
@@ -484,7 +492,7 @@ function wireLongPress(
   map.on("mousedown", (e) => {
     if (e.originalEvent.button !== 0) return;
     start = e.point;
-    timer = setTimeout(() => cb(e.lngLat), HOLD_MS);
+    timer = setTimeout(() => fire(e.lngLat), HOLD_MS);
   });
   map.on("mousemove", (e) => {
     if (start && e.point.dist(start) > MOVE_TOL) cancel();

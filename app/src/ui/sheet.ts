@@ -34,6 +34,10 @@ export function openSheet(title: string, onClose?: () => void): Sheet {
   const close = () => {
     if (closed) return;
     closed = true;
+    // Force the slide-off inline: a drag may have left an inline transform, which
+    // would otherwise override `.sheet.hidden` and leave the sheet visible.
+    sheet.style.transition = "transform 0.2s ease";
+    sheet.style.transform = "translateY(110%)";
     sheet.classList.add("hidden");
     backdrop.remove();
     setTimeout(() => sheet.remove(), 200);
