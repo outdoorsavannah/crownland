@@ -41,32 +41,54 @@ export function openSheet(title: string, onClose?: () => void): Sheet {
   };
   backdrop.addEventListener("click", close);
 
-  // Swipe the grab handle down to dismiss (the sheet closes even mid-task, e.g.
-  // the measure tool, without needing to complete it).
+  // Drag down anywhere along the sheet's top — handle, title, intro text, any
+  // non-interactive area while scrolled to the top — to dismiss it (the sheet
+  // closes even mid-task, e.g. the measure tool). Interactive controls and
+  // normal body scrolling are left untouched.
   let startY = 0;
   let dy = 0;
   let dragging = false;
-  handle.addEventListener("pointerdown", (e) => {
-    dragging = true;
+  let maybe = false;
+  const SLOP = 6;
+  const CLOSE_AT = 90;
+
+  sheet.addEventListener("pointerdown", (e) => {
+    const t = e.target as HTMLElement;
+    if (t.closest("input, textarea, select, button, a, [contenteditable='true']")) return;
+    if (sheet.scrollTop > 0) return; // scrolled down — let the body scroll
+    maybe = true;
     startY = e.clientY;
     dy = 0;
-    sheet.style.transition = "none";
-    try {
-      handle.setPointerCapture(e.pointerId);
-    } catch {
-      // Non-capturable pointer (e.g. synthetic events) — drag still works.
-    }
   });
-  handle.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    dy = Math.max(0, e.clientY - startY);
+  sheet.addEventListener("pointermove", (e) => {
+    if (!maybe && !dragging) return;
+    const delta = e.clientY - startY;
+    if (!dragging) {
+      if (delta > SLOP) {
+        dragging = true;
+        sheet.style.transition = "none";
+        try {
+          sheet.setPointerCapture(e.pointerId);
+        } catch {
+          // Non-capturable pointer (e.g. synthetic events) — drag still works.
+        }
+      } else if (delta < -SLOP) {
+        maybe = false; // upward gesture — hand back to native scroll
+        return;
+      } else {
+        return;
+      }
+    }
+    dy = Math.max(0, delta);
+    e.preventDefault();
     sheet.style.transform = `translateY(${dy}px)`;
   });
   const endDrag = () => {
+    maybe = false;
     if (!dragging) return;
     dragging = false;
     sheet.style.transition = "transform 0.2s ease";
-    if (dy > 90) {
+    if (dy > CLOSE_AT) {
       sheet.style.transform = "translateY(110%)";
       close();
     } else {
@@ -74,8 +96,8 @@ export function openSheet(title: string, onClose?: () => void): Sheet {
     }
     dy = 0;
   };
-  handle.addEventListener("pointerup", endDrag);
-  handle.addEventListener("pointercancel", endDrag);
+  sheet.addEventListener("pointerup", endDrag);
+  sheet.addEventListener("pointercancel", endDrag);
 
   return {
     el: sheet,

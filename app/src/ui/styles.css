@@ -167,6 +167,7 @@ body {
   padding: 12px 16px calc(16px + var(--safe-bottom));
   max-height: 72vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   transform: translateY(0);
   transition: transform 0.2s ease;
@@ -176,17 +177,11 @@ body {
 }
 
 .sheet-handle {
-  box-sizing: content-box;
   width: 40px;
   height: 4px;
   border-radius: 2px;
   background: var(--border);
-  background-clip: content-box;
-  /* Bigger touch target for the swipe-to-dismiss drag without a fatter bar. */
-  padding: 10px 40px;
-  margin: -6px auto 2px;
-  touch-action: none;
-  cursor: grab;
+  margin: 0 auto 12px;
 }
 
 .sheet h2 {
