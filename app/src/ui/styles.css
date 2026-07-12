@@ -580,6 +580,11 @@ select.text-input {
 .measure-angle-row > span {
   font-variant-numeric: tabular-nums;
 }
+.measure-fallback {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
 .measure-result {
   margin-top: 14px;
   font-size: 18px;
@@ -634,9 +639,20 @@ select.text-input {
   width: 100%;
   transform: translateY(-50%);
 }
+.cam-hint {
+  position: absolute;
+  top: calc(12px + var(--safe-top));
+  left: 12px;
+  right: 12px;
+  text-align: center;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.35;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
 .cam-live {
   position: absolute;
-  top: calc(16px + var(--safe-top));
+  top: calc(52px + var(--safe-top));
   left: 0;
   right: 0;
   text-align: center;
@@ -648,7 +664,7 @@ select.text-input {
 }
 .cam-chips {
   position: absolute;
-  top: calc(74px + var(--safe-top));
+  top: calc(112px + var(--safe-top));
   left: 0;
   right: 0;
   text-align: center;

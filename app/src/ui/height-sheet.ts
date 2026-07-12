@@ -128,20 +128,27 @@ export function openHeightSheet(onResult: (heightM: string) => void): void {
     }
   }
 
-  // Live sensor entry: a big readout plus Top/Base capture rows and a camera
-  // button for precise aiming.
+  // Live sensor entry. The camera crosshair is the accurate, primary way to aim
+  // (you see the tree); tilt-only capture is a fallback that needs the phone to
+  // be sighted like a gunsight, which we spell out.
   function sensorAngles(): void {
-    const readout = document.createElement("div");
-    readout.className = "measure-live";
-    readout.textContent = "0.0°";
-    liveEl = readout;
-
-    const camBtn = button("Aim with camera 📷");
+    const camBtn = button("Aim with camera 📷", { primary: true });
     camBtn.style.width = "100%";
-    camBtn.style.marginTop = "6px";
     camBtn.addEventListener("click", () => openCamera());
 
-    angleBox.append(readout, angleRow("Top", "top"), angleRow("Base", "base"), camBtn);
+    const fallback = document.createElement("div");
+    fallback.className = "measure-fallback";
+    const note = document.createElement("p");
+    note.className = "measure-hint";
+    note.textContent =
+      "No camera? Hold the phone upright at eye level and sight along its top edge at the target, then capture.";
+    const readout = document.createElement("div");
+    readout.className = "measure-live";
+    readout.textContent = `${live.toFixed(1)}°`;
+    liveEl = readout;
+    fallback.append(note, readout, angleRow("Top", "top"), angleRow("Base", "base"));
+
+    angleBox.append(camBtn, fallback);
   }
 
   async function initSensor(): Promise<void> {
@@ -155,6 +162,7 @@ export function openHeightSheet(onResult: (heightM: string) => void): void {
         if (liveEl) liveEl.textContent = `${p.toFixed(1)}°`;
       });
       sensorAngles();
+      openCamera(); // camera-first: jump straight to the crosshair view
     } catch {
       manualAngles();
     }
@@ -167,6 +175,10 @@ export function openHeightSheet(onResult: (heightM: string) => void): void {
 
     const crosshair = document.createElement("div");
     crosshair.className = "cam-crosshair";
+
+    const camHint = document.createElement("div");
+    camHint.className = "cam-hint";
+    camHint.textContent = "Align the crosshair on the treetop → Capture top, then the base.";
 
     const hud = document.createElement("div");
     hud.className = "cam-live";
@@ -200,7 +212,7 @@ export function openHeightSheet(onResult: (heightM: string) => void): void {
     });
     bar.append(capTop, capBase, done);
 
-    overlay.append(crosshair, hud, chips, bar);
+    overlay.append(crosshair, camHint, hud, chips, bar);
     document.getElementById("ui-root")!.append(overlay);
 
     let cam: CameraView | null = null;
