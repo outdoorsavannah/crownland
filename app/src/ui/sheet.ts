@@ -41,6 +41,42 @@ export function openSheet(title: string, onClose?: () => void): Sheet {
   };
   backdrop.addEventListener("click", close);
 
+  // Swipe the grab handle down to dismiss (the sheet closes even mid-task, e.g.
+  // the measure tool, without needing to complete it).
+  let startY = 0;
+  let dy = 0;
+  let dragging = false;
+  handle.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    startY = e.clientY;
+    dy = 0;
+    sheet.style.transition = "none";
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch {
+      // Non-capturable pointer (e.g. synthetic events) — drag still works.
+    }
+  });
+  handle.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    dy = Math.max(0, e.clientY - startY);
+    sheet.style.transform = `translateY(${dy}px)`;
+  });
+  const endDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    sheet.style.transition = "transform 0.2s ease";
+    if (dy > 90) {
+      sheet.style.transform = "translateY(110%)";
+      close();
+    } else {
+      sheet.style.transform = "translateY(0)";
+    }
+    dy = 0;
+  };
+  handle.addEventListener("pointerup", endDrag);
+  handle.addEventListener("pointercancel", endDrag);
+
   return {
     el: sheet,
     body,

@@ -176,11 +176,17 @@ body {
 }
 
 .sheet-handle {
+  box-sizing: content-box;
   width: 40px;
   height: 4px;
   border-radius: 2px;
   background: var(--border);
-  margin: 0 auto 12px;
+  background-clip: content-box;
+  /* Bigger touch target for the swipe-to-dismiss drag without a fatter bar. */
+  padding: 10px 40px;
+  margin: -6px auto 2px;
+  touch-action: none;
+  cursor: grab;
 }
 
 .sheet h2 {

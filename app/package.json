@@ -11,6 +11,7 @@
     "gen:sample": "node scripts/gen-sample-data.mjs",
     "test": "node scripts/test-resume.mjs && node scripts/test-height.mjs && node scripts/test-bigtree-score.mjs && node scripts/test-nearest-town.mjs",
     "cap:sync": "cap sync",
+    "ios:build": "npm run build && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 cap sync ios",
     "cap:ios": "cap open ios",
     "cap:android": "cap open android"
   },
