@@ -312,6 +312,18 @@ input.text-input[type="date"]::-webkit-date-and-time-value {
 input.text-input[type="date"]::-webkit-calendar-picker-indicator {
   margin-left: auto;
 }
+/* Dropdown (species) styled like the text inputs, with a custom caret. */
+select.text-input {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%239fb0c0' stroke-width='2'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.tree-field .select-input {
+  margin-bottom: 8px;
+}
 
 /* ---- Saved-pins list ---- */
 .pin-row {
@@ -591,16 +603,6 @@ input.text-input[type="date"]::-webkit-calendar-picker-indicator {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-/* Native camera-preview renders behind the webview: make the app shell
-   transparent so the feed shows through under the HUD. */
-body.cam-active {
-  background: transparent;
-}
-body.cam-active #map,
-body.cam-active #controls,
-body.cam-active #coord-readout {
-  visibility: hidden;
 }
 .cam-crosshair {
   position: absolute;

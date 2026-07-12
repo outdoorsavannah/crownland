@@ -73,6 +73,7 @@ export function openTreeForm(
   // One labelled input per registry field.
   const inputs = new Map<keyof TreeFields, HTMLInputElement>();
   let circInput: HTMLInputElement | null = null; // helper above DBH (not stored)
+  let speciesSelect: HTMLSelectElement | null = null; // dropdown that fills species
   for (const [key, label] of TREE_FIELD_LABELS) {
     const field = document.createElement("label");
     field.className = "tree-field";
@@ -99,19 +100,23 @@ export function openTreeForm(
       input.placeholder = "auto from height, DBH, crown";
     }
 
-    // Species → free text with a dropdown of common BC species. The datalist
-    // lives inside the sheet, so it is removed when the sheet closes.
+    // Species → a real dropdown of common BC species, backed by the text input
+    // for custom entries. (A <datalist> only shows a faint hint on iOS.)
     if (key === "species") {
-      const listId = "species-options";
-      input.setAttribute("list", listId);
-      const dl = document.createElement("datalist");
-      dl.id = listId;
+      input.placeholder = "or type a species";
+      const sel = document.createElement("select");
+      sel.className = "text-input select-input";
+      const ph = document.createElement("option");
+      ph.value = "";
+      ph.textContent = "Choose common species…";
+      sel.append(ph);
       for (const s of BC_TREE_SPECIES) {
         const o = document.createElement("option");
         o.value = s;
-        dl.append(o);
+        o.textContent = s;
+        sel.append(o);
       }
-      field.append(dl);
+      speciesSelect = sel;
     }
 
     // Circumference helper directly above DBH: computes DBH = circumference / π.
@@ -133,6 +138,20 @@ export function openTreeForm(
     field.append(cap, input);
     inputs.set(key, input);
     sheet.body.append(field);
+
+    // Place the species dropdown above its text input and keep the two in sync:
+    // picking fills the text field; typing a listed name re-selects it.
+    if (key === "species" && speciesSelect) {
+      const sel = speciesSelect;
+      field.insertBefore(sel, input);
+      sel.value = BC_TREE_SPECIES.includes(input.value) ? input.value : "";
+      sel.addEventListener("change", () => {
+        if (sel.value) input.value = sel.value;
+      });
+      input.addEventListener("input", () => {
+        sel.value = BC_TREE_SPECIES.includes(input.value) ? input.value : "";
+      });
+    }
 
     // Height gets a measure tool that fills the input via the device tilt sensor.
     if (key === "height_m") {

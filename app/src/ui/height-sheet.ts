@@ -7,6 +7,7 @@ import {
   type Inclinometer,
 } from "../measure/inclinometer";
 import { startCameraView, type CameraView } from "../measure/camera-view";
+import { toast } from "./toast";
 
 // Tree-height tool. Two-angle tangent method (see measure/height.ts): the user
 // enters the horizontal distance to the trunk, then sights the top and base to
@@ -216,7 +217,8 @@ export function openHeightSheet(onResult: (heightM: string) => void): void {
     startCameraView(overlay)
       .then((c) => (cam = c))
       .catch(() => {
-        // Camera unavailable — drop back to the sheet's tilt-only capture.
+        // Camera unavailable / denied — tell the user, drop back to tilt-only.
+        toast("Camera unavailable — aim with the phone instead");
         void closeCamera();
       });
   }

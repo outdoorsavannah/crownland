@@ -3,8 +3,6 @@ PODS:
     - CapacitorCordova
   - CapacitorCamera (6.1.3):
     - Capacitor
-  - CapacitorCommunityCameraPreview (6.0.1):
-    - Capacitor
   - CapacitorCordova (6.2.1)
   - CapacitorFilesystem (6.0.4):
     - Capacitor
@@ -20,7 +18,6 @@ PODS:
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
-  - "CapacitorCommunityCameraPreview (from `../../node_modules/@capacitor-community/camera-preview`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
   - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
@@ -33,8 +30,6 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorCamera:
     :path: "../../node_modules/@capacitor/camera"
-  CapacitorCommunityCameraPreview:
-    :path: "../../node_modules/@capacitor-community/camera-preview"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorFilesystem:
@@ -51,7 +46,6 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Capacitor: c95400d761e376be9da6be5a05f226c0e865cebf
   CapacitorCamera: 5ba135b0cb55a788758139fa2404d726bf60f0f3
-  CapacitorCommunityCameraPreview: 56f8ea051d2e7625ee1a561cc50ea451b4ee485c
   CapacitorCordova: 8d93e14982f440181be7304aa9559ca631d77fff
   CapacitorFilesystem: 5b9aec35c0212bd0064e26d278c93e925864f212
   CapacitorGeolocation: ef657a46a125be74010f4ce57caae173c23204d2
@@ -59,6 +53,6 @@ SPEC CHECKSUMS:
   CapacitorPreferences: 5848e0691b36b4bb4acc98e481ab56d451578d30
   CapacitorShare: 77ff779e3b7c6ae9fb5461e52cf7ef805d429491
 
-PODFILE CHECKSUM: b20bb18f549bb76de328017dc0aa900677590a61
+PODFILE CHECKSUM: 063325ab6f9a972443dcee020e3523e1455c789e
 
 COCOAPODS: 1.17.0
