@@ -59,6 +59,7 @@ export function openSheet(title: string, onClose?: () => void): Sheet {
   // non-interactive area while scrolled to the top — to dismiss it (the sheet
   // closes even mid-task, e.g. the measure tool). Interactive controls and
   // normal body scrolling are left untouched.
+  const INTERACTIVE = "input, textarea, select, button, a, [contenteditable='true']";
   let startY = 0;
   let dy = 0;
   let dragging = false;
@@ -66,10 +67,13 @@ export function openSheet(title: string, onClose?: () => void): Sheet {
   const SLOP = 6;
   const CLOSE_AT = 90;
 
+  // True when a downward gesture from `target` (while scrolled to the top) should
+  // dismiss rather than scroll.
+  const dragCandidate = (target: EventTarget | null): boolean =>
+    sheet.scrollTop <= 0 && !(target as HTMLElement)?.closest?.(INTERACTIVE);
+
   sheet.addEventListener("pointerdown", (e) => {
-    const t = e.target as HTMLElement;
-    if (t.closest("input, textarea, select, button, a, [contenteditable='true']")) return;
-    if (sheet.scrollTop > 0) return; // scrolled down — let the body scroll
+    if (!dragCandidate(e.target)) return;
     maybe = true;
     startY = e.clientY;
     dy = 0;
@@ -97,6 +101,32 @@ export function openSheet(title: string, onClose?: () => void): Sheet {
     e.preventDefault();
     sheet.style.transform = `translateY(${dy}px)`;
   });
+
+  // iOS claims a downward drag on a scrollable sheet as a native scroll (rubber-
+  // band), which pointer `preventDefault` can't stop — so the sheet never drags
+  // and its background shows through at the top. A non-passive touchmove that
+  // preventDefaults the downward-at-top case suppresses that and lets the drag
+  // above take over.
+  sheet.addEventListener(
+    "touchmove",
+    (e) => {
+      const touch = e.touches[0];
+      if (!touch) return;
+      if (dragging || (dragCandidate(touch.target) && touch.clientY > startY)) {
+        e.preventDefault();
+      }
+    },
+    { passive: false },
+  );
+  sheet.addEventListener(
+    "touchstart",
+    (e) => {
+      const touch = e.touches[0];
+      if (touch && dragCandidate(touch.target)) startY = touch.clientY;
+    },
+    { passive: true },
+  );
+
   const endDrag = () => {
     maybe = false;
     if (!dragging) return;
