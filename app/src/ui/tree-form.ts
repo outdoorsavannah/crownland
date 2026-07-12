@@ -75,7 +75,10 @@ export function openTreeForm(
   let circInput: HTMLInputElement | null = null; // helper above DBH (not stored)
   let speciesSelect: HTMLSelectElement | null = null; // dropdown that fills species
   for (const [key, label] of TREE_FIELD_LABELS) {
-    const field = document.createElement("label");
+    // Species holds two controls (dropdown + custom text). A <label> may wrap
+    // only one, and on iOS WebKit two-in-a-label makes the tap re-dispatch and
+    // the dropdown open-then-close — so use a plain <div> for it.
+    const field = document.createElement(key === "species" ? "div" : "label");
     field.className = "tree-field";
     const cap = document.createElement("span");
     cap.textContent = label;
