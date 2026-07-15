@@ -1,7 +1,7 @@
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { registerPmtilesProtocol } from "./pmtiles-protocol";
-import { buildStyle, LAYER_IDS, vriFilter } from "./style";
+import { buildStyle, LAYER_IDS, vriFilter, bigTreeFilter } from "./style";
 import type { Pack } from "../data/manifest";
 import { assertOfflineStyle } from "../data/offline-guard";
 
@@ -11,7 +11,10 @@ export interface MapHandle {
   setTenuresVisible(v: boolean): void;
   setOldGrowthVisible(v: boolean): void;
   setOldGrowthNonLegalVisible(v: boolean): void;
-  setBigTreesVisible(v: boolean): void;
+  setBigTreesConifersVisible(v: boolean): void;
+  setBigTreesBroadleavesVisible(v: boolean): void;
+  setBigTreesDeadVisible(v: boolean): void;
+  setBigTreeMinDbh(v: number): void;
   setVriVisible(v: boolean): void;
   setVriFilter(minAge: number, minHeight: number): void;
   setCrownOpacity(v: number): void;
@@ -62,7 +65,26 @@ export async function initMap(pack: Pack): Promise<MapHandle> {
       setVisible([LAYER_IDS.oldGrowthFill, LAYER_IDS.oldGrowthLine], v),
     setOldGrowthNonLegalVisible: (v) =>
       setVisible([LAYER_IDS.oldGrowthNlFill, LAYER_IDS.oldGrowthNlLine], v),
-    setBigTreesVisible: (v) => setVisible([LAYER_IDS.bigTrees, LAYER_IDS.bigTreeLabels], v),
+    setBigTreesConifersVisible: (v) =>
+      setVisible([LAYER_IDS.bigTrees, LAYER_IDS.bigTreeLabels], v),
+    setBigTreesBroadleavesVisible: (v) =>
+      setVisible([LAYER_IDS.bigTreesBroad, LAYER_IDS.bigTreeBroadLabels], v),
+    setBigTreesDeadVisible: (v) =>
+      setVisible([LAYER_IDS.bigTreesDead, LAYER_IDS.bigTreeDeadLabels], v),
+    setBigTreeMinDbh: (v) => {
+      const circle = bigTreeFilter(v) as never;
+      const label = ["all", ["has", "dbh_m"], bigTreeFilter(v)] as never;
+      for (const id of [LAYER_IDS.bigTrees, LAYER_IDS.bigTreesBroad, LAYER_IDS.bigTreesDead]) {
+        if (map.getLayer(id)) map.setFilter(id, circle);
+      }
+      for (const id of [
+        LAYER_IDS.bigTreeLabels,
+        LAYER_IDS.bigTreeBroadLabels,
+        LAYER_IDS.bigTreeDeadLabels,
+      ]) {
+        if (map.getLayer(id)) map.setFilter(id, label);
+      }
+    },
     setVriVisible: (v) => setVisible([LAYER_IDS.vriFill, LAYER_IDS.vriLine], v),
     setVriFilter: (minAge, minHeight) => {
       const f = vriFilter(minAge, minHeight) as never;

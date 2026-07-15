@@ -217,6 +217,7 @@ function wireLocate(handle: MapHandle): void {
     marker?.remove();
     marker = null;
     beam = null;
+    lastKnownFix = null; // stale once we stop tracking
     locateBtn.classList.remove("active");
   };
 
@@ -247,6 +248,7 @@ function wireLocate(handle: MapHandle): void {
     try {
       id = await watch((fix) => {
         if (!tracking || !marker) return;
+        lastKnownFix = { lng: fix.lng, lat: fix.lat };
         marker.setLngLat([fix.lng, fix.lat]).addTo(handle.map);
         if (firstFix) {
           firstFix = false;
@@ -284,6 +286,8 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
   const { map } = handle;
   const queryLayers = [
     LAYER_IDS.bigTrees,
+    LAYER_IDS.bigTreesBroad,
+    LAYER_IDS.bigTreesDead,
     LAYER_IDS.tenureLine,
     LAYER_IDS.oldGrowthFill,
     LAYER_IDS.oldGrowthNlFill,
@@ -292,11 +296,17 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
   ].filter((id) => map.getLayer(id));
 
   // Tap → drop a marker at the tap point + feature attributes + coordinates
-  // (spec §9, acceptance #2). Prefer a tenure feature over the crown parcel
-  // underneath it. The marker is cleared when the sheet closes.
+  // (spec §9, acceptance #2). We hit-test a small pixel box (not the exact
+  // pixel) so pins and tree points are easy to tap. Prefer a tenure feature
+  // over the crown parcel underneath it. The marker is cleared on sheet close.
+  const TAP_RADIUS = 12; // px around the tap counted as a hit
   let tapMarker: maplibregl.Marker | null = null;
   map.on("click", (e) => {
-    const feats = map.queryRenderedFeatures(e.point, { layers: queryLayers });
+    const box: [maplibregl.PointLike, maplibregl.PointLike] = [
+      [e.point.x - TAP_RADIUS, e.point.y - TAP_RADIUS],
+      [e.point.x + TAP_RADIUS, e.point.y + TAP_RADIUS],
+    ];
+    const feats = map.queryRenderedFeatures(box, { layers: queryLayers });
     if (!feats.length) return;
     tapMarker?.remove();
     const el = document.createElement("div");
@@ -306,10 +316,23 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
     tapMarker = new maplibregl.Marker({ element: el, anchor: "bottom" })
       .setLngLat(e.lngLat)
       .addTo(map);
-    // Prefer the most specific feature: a big-tree point, then tenure, then
-    // old-growth reserve, then the crown parcel underneath.
+    // Prefer the most specific feature: a big-tree point (the nearest one to the
+    // tap, since several may fall inside the box), then tenure, then old-growth
+    // reserve, then the crown parcel underneath.
+    const trees = feats.filter((f) => f.source === "bigtrees");
+    let nearestTree = trees[0];
+    let bestD = Infinity;
+    for (const t of trees) {
+      const c = (t.geometry as GeoJSON.Point).coordinates as [number, number];
+      const p = map.project(c);
+      const d = (p.x - e.point.x) ** 2 + (p.y - e.point.y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        nearestTree = t;
+      }
+    }
     const preferred =
-      feats.find((f) => f.source === "bigtrees") ??
+      nearestTree ??
       feats.find((f) => f.source === "tenures") ??
       feats.find((f) => f.source === "oldgrowth") ??
       feats.find((f) => f.source === "crown") ??
@@ -324,8 +347,9 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
   map.on("mouseleave", queryLayers[0] ?? "", () => (map.getCanvas().style.cursor = ""));
 
   // Long-press → dropped pin; the sheet offers "Save pin" (spec §9, acceptance
-  // #4, plus saved-pins extension).
-  wireLongPress(map, (lngLat) => dropPinAndOpen(map, lngLat));
+  // #4, plus saved-pins extension). Snap onto the live GPS point if the press
+  // lands right beside it.
+  wireLongPress(map, (lngLat) => dropPinAndOpen(map, snapToGps(map, lngLat)));
 
   // Live coordinate readout (spec §9).
   const readout = document.getElementById("coord-readout")!;
@@ -342,6 +366,23 @@ function wireInteractions(handle: MapHandle, _manifest: Manifest): void {
 let pinMarker: maplibregl.Marker | null = null; // transient (unsaved) pin
 let savedMarkers: maplibregl.Marker[] = [];
 let elevationSampler: ElevationSampler | null = null; // reads the pack's DEM
+// Last live GPS fix while location tracking is on (null when off); used to snap
+// a dropped pin onto the user's exact position when they long-press right by it.
+let lastKnownFix: { lng: number; lat: number } | null = null;
+const SNAP_PX = 24; // long-press within this many px of the GPS dot snaps to it
+
+/** If tracking and the tap is right next to the live GPS point, return the exact
+ *  GPS coordinate; otherwise return the tap coordinate unchanged. */
+function snapToGps(
+  map: maplibregl.Map,
+  lngLat: { lng: number; lat: number },
+): { lng: number; lat: number } {
+  if (!lastKnownFix) return lngLat;
+  const a = map.project(lngLat);
+  const b = map.project(lastKnownFix);
+  if (Math.hypot(a.x - b.x, a.y - b.y) <= SNAP_PX) return { ...lastKnownFix };
+  return lngLat;
+}
 
 function makePinEl(color: string): HTMLElement {
   const el = document.createElement("div");
@@ -402,6 +443,7 @@ async function refreshSavedPins(map: maplibregl.Map): Promise<void> {
   savedMarkers = [];
   for (const pin of await loadPins()) {
     const el = pin.kind === "tree" ? makeTreeEl() : makePinEl("#2f9e57");
+    el.classList.add("hit-pad"); // bigger tap target (spec: easier to tap pins)
     const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
       .setLngLat([pin.lng, pin.lat])
       .addTo(map);

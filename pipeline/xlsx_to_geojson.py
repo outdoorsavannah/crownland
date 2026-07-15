@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Convert the BC BigTree Registry conifer .xlsx into a GeoJSON point layer.
+"""Convert a BC BigTree Registry .xlsx into a GeoJSON point layer.
+
+Handles all three registry exports (conifers, broadleaves, dead), whose column
+headers differ (e.g. the dead list uses "Tree"/"Name"/"dia_m" where the living
+lists use "common_name"/"tree_nickname"/"DBH_(m)"). Each output key accepts a
+list of possible header aliases.
 
 Stdlib only (no openpyxl) — an .xlsx is a zip of XML. Keeps a compact set of
 attributes for the app's tap sheet, and only emits trees that have valid
@@ -14,19 +19,20 @@ from xml.etree import ElementTree as ET
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 
-# header name -> output property key (only these are carried into the tile)
+# output property key -> accepted header aliases (first match in the sheet wins).
+# Covers the conifer/broadleaf exports and the differently-named dead export.
 KEEP = {
-    "common_name": "species",
-    "tree_nickname": "nickname",
-    "tree_score": "score",
-    "height_(m)": "height_m",
-    "DBH_(m)": "dbh_m",
-    "crown_spread_(m)": "crown_m",
-    "nearest_town": "town",
-    "ownership": "ownership",
-    "elevation_m": "elevation_m",
-    "last_measured": "measured",
-    "tree_registry_id": "id",
+    "species": ("common_name", "Tree"),
+    "nickname": ("tree_nickname", "Name"),
+    "score": ("tree_score",),
+    "height_m": ("height_(m)", "height_m"),
+    "dbh_m": ("DBH_(m)", "dia_m"),
+    "crown_m": ("crown_spread_(m)", "crown_spr_m"),
+    "town": ("nearest_town",),
+    "ownership": ("ownership",),
+    "elevation_m": ("elevation_m",),
+    "measured": ("last_measured", "year-meas"),
+    "id": ("tree_registry_id", "ID#"),
 }
 NUMERIC = {"score", "height_m", "dbh_m", "crown_m", "elevation_m"}
 
@@ -57,10 +63,12 @@ def read_rows(path):
 
 
 def num(x):
-    try:
-        return float(x)
-    except (TypeError, ValueError):
+    # Tolerant leading-number parse: some cells carry a unit mark (e.g. the
+    # broadleaf score 398"), so a bare float() would drop them.
+    if x is None:
         return None
+    m = re.match(r"-?\d+(\.\d+)?", str(x).strip())
+    return float(m.group()) if m else None
 
 
 def main():
@@ -72,6 +80,14 @@ def main():
     if lat_i is None or lng_i is None:
         sys.exit("could not find latitude/longitude columns")
 
+    # Resolve each output key to the sheet column of its first matching alias.
+    col = {}
+    for key, aliases in KEEP.items():
+        for name in aliases:
+            if name in idx:
+                col[key] = idx[name]
+                break
+
     feats, skipped = [], 0
     for cells in rows:
         lat, lng = num(cells.get(lat_i)), num(cells.get(lng_i))
@@ -80,8 +96,8 @@ def main():
             skipped += 1
             continue
         props = {}
-        for name, key in KEEP.items():
-            raw = cells.get(idx[name]) if name in idx else None
+        for key, ci in col.items():
+            raw = cells.get(ci)
             if raw is None or str(raw).strip() == "":
                 continue
             props[key] = round(num(raw), 2) if key in NUMERIC and num(raw) is not None else str(raw).strip()

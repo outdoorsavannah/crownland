@@ -45,9 +45,13 @@ cd pipeline
 ./04_basemap.sh                    # planetiler -> out/basemap-bc.pmtiles
 ./05_style_manifest.sh             # sizes + fonts + out/manifest.json
 
-# Optional: big-trees point layer (needs a manually-downloaded UBC xlsx; writes
-# straight into the app bundle as a committed, always-on layer — not a pack).
-BIGTREES_XLSX=/path/to/BCBT_conifers.xlsx ./08_bigtrees.sh
+# Optional: big-trees point layer (conifers + broadleaves + dead; needs the
+# manually-downloaded UBC xlsx files; writes straight into the app bundle as a
+# committed, always-on layer with three source-layers — not a pack). Conifers
+# required; the other two optional.
+BIGTREES_CONIFERS_XLSX=/path/to/BCBT_conifers.xlsx \
+BIGTREES_BROADLEAVES_XLSX=/path/to/BCBT_broadleaves.xlsx \
+BIGTREES_DEAD_XLSX=/path/to/BCBT_dead.xlsx ./08_bigtrees.sh
 
 # Optional: VRI "old growth by age" (needs GDAL + a manually-downloaded VRI
 # geodatabase — VEG_COMP_LYR_R1_POLY, huge). Pre-filters to age >= VRI_MIN_AGE;

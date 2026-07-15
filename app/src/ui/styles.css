@@ -503,6 +503,18 @@ select.text-input {
   cursor: pointer;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
+
+/* Enlarge the tappable area of saved pin/tree markers without changing how they
+   look or where they sit: a transparent, absolutely-positioned pad extends the
+   hit target ~14px in every direction, and clicks on it bubble to the marker. */
+.hit-pad {
+  position: relative;
+}
+.hit-pad::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+}
 .tree-field {
   display: block;
   margin-top: 12px;

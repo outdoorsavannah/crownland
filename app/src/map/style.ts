@@ -27,7 +27,55 @@ export const LAYER_IDS = {
   vriLine: "vri-outline",
   bigTrees: "bigtrees-point",
   bigTreeLabels: "bigtrees-label",
+  bigTreesBroad: "bigtrees-broad-point",
+  bigTreeBroadLabels: "bigtrees-broad-label",
+  bigTreesDead: "bigtrees-dead-point",
+  bigTreeDeadLabels: "bigtrees-dead-label",
 } as const;
+
+// The three BC BigTree registries share the bundled `bigtrees` source but live
+// in distinct source-layers, and each renders in its own colour with its own
+// toggle. Point size is driven entirely by trunk diameter (DBH); a shared
+// min-DBH slider filters all three at once.
+export const BIGTREE_MAX_DBH = 6;
+const bigTreeDbh = ["to-number", ["get", "dbh_m"], 0];
+
+/** MapLibre filter hiding big trees whose DBH is below the slider value. */
+export function bigTreeFilter(minDbh: number): unknown[] {
+  return [">=", bigTreeDbh, minDbh];
+}
+
+interface BigTreeLayer {
+  sourceLayer: string;
+  circleId: string;
+  labelId: string;
+  color: string;
+  textColor: string;
+}
+
+const BIGTREE_LAYERS: BigTreeLayer[] = [
+  {
+    sourceLayer: "bigtrees",
+    circleId: LAYER_IDS.bigTrees,
+    labelId: LAYER_IDS.bigTreeLabels,
+    color: "#d0342c", // conifers — red
+    textColor: "#8a1f18",
+  },
+  {
+    sourceLayer: "bigtrees_broadleaves",
+    circleId: LAYER_IDS.bigTreesBroad,
+    labelId: LAYER_IDS.bigTreeBroadLabels,
+    color: "#e07b1a", // broadleaves — orange
+    textColor: "#9a5410",
+  },
+  {
+    sourceLayer: "bigtrees_dead",
+    circleId: LAYER_IDS.bigTreesDead,
+    labelId: LAYER_IDS.bigTreeDeadLabels,
+    color: "#8a8a8a", // dead — grey
+    textColor: "#4a4a4a",
+  },
+];
 
 // VRI old-growth-by-age defaults. The build pre-filters to age >= VRI_FLOOR_AGE;
 // the app's two sliders filter further at runtime (min age + min height).
@@ -449,56 +497,63 @@ export async function buildStyle(pack: Pack): Promise<StyleSpecification> {
     });
   }
 
-  // ---- Big trees (BC BigTree Registry) — bundled point layer, always on top ----
-  layers.push(
-    {
-      id: LAYER_IDS.bigTrees,
-      type: "circle",
-      source: "bigtrees",
-      "source-layer": "bigtrees",
-      paint: {
-        // Radius grows with zoom and with the tree's BC BigTree score.
-        "circle-radius": [
-          "interpolate", ["linear"], ["zoom"],
-          4, 2.2,
-          9, ["interpolate", ["linear"], ["coalesce", ["get", "score"], 150], 100, 3, 450, 6],
-          14, ["interpolate", ["linear"], ["coalesce", ["get", "score"], 150], 100, 5, 450, 13],
-        ],
-        "circle-color": "#b5651d",
-        "circle-opacity": 0.9,
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": 1.5,
+  // ---- Big trees (BC BigTree Registry) — bundled point layers, always on top ----
+  // One circle + label pair per registry (conifers / broadleaves / dead). The
+  // circle radius is driven entirely by trunk diameter (DBH); the shared min-DBH
+  // slider filters all three via `filter` at runtime.
+  for (const t of BIGTREE_LAYERS) {
+    layers.push(
+      {
+        id: t.circleId,
+        type: "circle",
+        source: "bigtrees",
+        "source-layer": t.sourceLayer,
+        filter: bigTreeFilter(0) as never,
+        paint: {
+          // Radius grows with zoom and with the tree's trunk diameter (DBH).
+          "circle-radius": [
+            "interpolate", ["linear"], ["zoom"],
+            4, ["interpolate", ["linear"], bigTreeDbh, 0.2, 1.5, BIGTREE_MAX_DBH, 4],
+            9, ["interpolate", ["linear"], bigTreeDbh, 0.2, 3, BIGTREE_MAX_DBH, 9],
+            14, ["interpolate", ["linear"], bigTreeDbh, 0.2, 5, BIGTREE_MAX_DBH, 20],
+          ] as never,
+          "circle-color": t.color,
+          "circle-opacity": 0.9,
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1.5,
+        },
       },
-    },
-    {
-      id: LAYER_IDS.bigTreeLabels,
-      type: "symbol",
-      source: "bigtrees",
-      "source-layer": "bigtrees",
-      minzoom: 11,
-      // Label by trunk diameter (DBH) — recorded for ~99.6% of trees, far more
-      // than height. "ø" marks it as a diameter; the tap sheet has full stats.
-      filter: ["has", "dbh_m"],
-      layout: {
-        "text-field": [
-          "concat",
-          "ø ",
-          ["to-string", ["/", ["round", ["*", ["get", "dbh_m"], 10]], 10]],
-          " m",
-        ],
-        "text-font": ["Noto Sans Regular"],
-        "text-size": 11,
-        "text-offset": [0, 1.1],
-        "text-anchor": "top",
-        "text-optional": true,
+      {
+        id: t.labelId,
+        type: "symbol",
+        source: "bigtrees",
+        "source-layer": t.sourceLayer,
+        minzoom: 11,
+        // Label by trunk diameter (DBH) — recorded for nearly every tree. "ø"
+        // marks it as a diameter; the tap sheet has full stats. Also honours the
+        // shared min-DBH filter.
+        filter: ["all", ["has", "dbh_m"], bigTreeFilter(0)] as never,
+        layout: {
+          "text-field": [
+            "concat",
+            "ø ",
+            ["to-string", ["/", ["round", ["*", ["get", "dbh_m"], 10]], 10]],
+            " m",
+          ],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 11,
+          "text-offset": [0, 1.1],
+          "text-anchor": "top",
+          "text-optional": true,
+        },
+        paint: {
+          "text-color": t.textColor,
+          "text-halo-color": "#f5f1e6",
+          "text-halo-width": 1.4,
+        },
       },
-      paint: {
-        "text-color": "#6b3f16",
-        "text-halo-color": "#f5f1e6",
-        "text-halo-width": 1.4,
-      },
-    },
-  );
+    );
+  }
 
   return {
     version: 8,

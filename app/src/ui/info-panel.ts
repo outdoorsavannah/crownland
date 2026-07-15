@@ -31,8 +31,9 @@ export function openInfoPanel(manifest: Manifest, onSwitchPacks?: () => void): v
     p(manifest.attribution.osm),
     p(
       "Big trees: BC BigTree Registry, UBC Faculty of Forestry " +
-        "(bigtrees.forestry.ubc.ca). Point locations shown with attribution; some " +
-        "registry trees have withheld locations and are not shown.",
+        "(bigtrees.forestry.ubc.ca) — conifers, broadleaves, and dead registries. " +
+        "Point locations shown with attribution; some registry trees have withheld " +
+        "locations and are not shown.",
     ),
     p(
       "Please protect these trees: stay on established trails, keep off the root " +

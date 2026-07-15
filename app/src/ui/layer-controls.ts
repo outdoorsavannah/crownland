@@ -1,6 +1,6 @@
 import { openSheet } from "./sheet";
 import type { MapHandle } from "../map/map-init";
-import { VRI_FLOOR_AGE, VRI_MAX_AGE, VRI_MAX_HEIGHT } from "../map/style";
+import { VRI_FLOOR_AGE, VRI_MAX_AGE, VRI_MAX_HEIGHT, BIGTREE_MAX_DBH } from "../map/style";
 import { Preferences } from "@capacitor/preferences";
 
 // Layer toggles (crown / tenures) + crown opacity slider (spec §9). Choices are
@@ -11,7 +11,10 @@ interface LayerPrefs {
   tenures: boolean;
   oldgrowth: boolean;
   oldgrowthNonLegal: boolean;
-  bigtrees: boolean;
+  bigtreesConifers: boolean;
+  bigtreesBroadleaves: boolean;
+  bigtreesDead: boolean;
+  bigtreeMinDbh: number;
   vri: boolean;
   vriMinAge: number;
   vriMinHeight: number;
@@ -24,7 +27,10 @@ const DEFAULTS: LayerPrefs = {
   tenures: true,
   oldgrowth: true,
   oldgrowthNonLegal: true,
-  bigtrees: true,
+  bigtreesConifers: true,
+  bigtreesBroadleaves: true,
+  bigtreesDead: true,
+  bigtreeMinDbh: 0,
   vri: false, // heavy layer, off by default
   vriMinAge: VRI_FLOOR_AGE,
   vriMinHeight: 0,
@@ -50,7 +56,10 @@ export function applyLayerPrefs(handle: MapHandle, prefs: LayerPrefs): void {
   handle.setTenuresVisible(prefs.tenures);
   handle.setOldGrowthVisible(prefs.oldgrowth);
   handle.setOldGrowthNonLegalVisible(prefs.oldgrowthNonLegal);
-  handle.setBigTreesVisible(prefs.bigtrees);
+  handle.setBigTreesConifersVisible(prefs.bigtreesConifers);
+  handle.setBigTreesBroadleavesVisible(prefs.bigtreesBroadleaves);
+  handle.setBigTreesDeadVisible(prefs.bigtreesDead);
+  handle.setBigTreeMinDbh(prefs.bigtreeMinDbh);
   handle.setVriFilter(prefs.vriMinAge, prefs.vriMinHeight);
   handle.setVriVisible(prefs.vri);
   handle.setCrownOpacity(prefs.opacity);
@@ -134,11 +143,27 @@ export function openLayerControls(handle: MapHandle, prefs: LayerPrefs): void {
       handle.setOldGrowthNonLegalVisible(v);
       void save(prefs);
     }),
-    toggleRow("Big trees (registry)", prefs.bigtrees, (v) => {
-      prefs.bigtrees = v;
-      handle.setBigTreesVisible(v);
+    toggleRow("Big trees (conifers)", prefs.bigtreesConifers, (v) => {
+      prefs.bigtreesConifers = v;
+      handle.setBigTreesConifersVisible(v);
       void save(prefs);
     }),
+    toggleRow("Big trees (broadleaves)", prefs.bigtreesBroadleaves, (v) => {
+      prefs.bigtreesBroadleaves = v;
+      handle.setBigTreesBroadleavesVisible(v);
+      void save(prefs);
+    }),
+    toggleRow("Big trees (dead)", prefs.bigtreesDead, (v) => {
+      prefs.bigtreesDead = v;
+      handle.setBigTreesDeadVisible(v);
+      void save(prefs);
+    }),
+    sliderRow(
+      (v) => `Big trees — min diameter: ${v.toFixed(1)} m`,
+      0, BIGTREE_MAX_DBH, 0.1, prefs.bigtreeMinDbh,
+      (v) => { prefs.bigtreeMinDbh = v; handle.setBigTreeMinDbh(v); },
+      () => void save(prefs),
+    ),
     toggleRow("Old growth by age (VRI)", prefs.vri, (v) => {
       prefs.vri = v;
       handle.setVriVisible(v);
