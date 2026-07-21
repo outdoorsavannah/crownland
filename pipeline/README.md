@@ -90,5 +90,32 @@ Upload `out/*.pmtiles` and `out/manifest.json` to any static host / object store
 ## Region packs (recommended default, spec §8/§14)
 
 `make_region_packs.sh` clips each artifact to a region bbox and re-emits smaller
-per-region PMTiles so users can control storage. See that script's header for the
-region list; it mirrors the region ids used in the app's manifest.
+per-region PMTiles so users can control storage. Region ids/bboxes live in
+`regions.sh` (single source of truth, mirroring the `region(...)` packs in
+`app/src/data/manifest.ts`).
+
+### One region's OGMA + VRI in one command
+
+OGMA and VRI reach the app by **two different paths**, which makes it easy to
+build only one of them for a region (e.g. end up with only Vancouver Island):
+
+- **OGMA** is fetched whole-province once (`07_...`) and **clipped** per region.
+- **VRI** is too big province-wide, so `09_vri.sh` builds it **per region**
+  directly — so `make_region_packs.sh` cannot clip it from a `vri-bc.pmtiles`
+  that usually never exists.
+
+`build_region.sh` does both for a named region, taking the bbox from `regions.sh`
+so there is no hand-typed bbox to get wrong:
+
+```bash
+cd pipeline
+VRI_SRC=/path/to/VRI.gdb ./build_region.sh skeena   # OGMA (clip) + VRI (build)
+SKIP_VRI=1 ./build_region.sh skeena                 # OGMA only (no VRI source yet)
+```
+
+Then record sizes/checksums and upload the two new archives plus the manifest:
+
+```bash
+./05_style_manifest.sh
+./r2/upload.sh
+```
