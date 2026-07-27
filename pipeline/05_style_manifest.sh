@@ -84,6 +84,7 @@ REGIONS = [
     ("kootenay",         "Kootenay",                 [-118.0, 48.9, -114.0, 51.5]),
     ("cariboo",          "Cariboo",                  [-126.0, 51.0, -119.0, 54.0]),
     ("skeena",           "Skeena",                   [-133.5, 52.5, -126.0, 56.5]),
+    ("northwest",        "Northwest",                [-139.1, 56.0, -126.0, 60.0]),
     ("northeast",        "Northeast",                [-126.0, 54.0, -119.9, 60.0]),
 ]
 for rid, name, bbox in REGIONS:
