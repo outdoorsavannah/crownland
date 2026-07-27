@@ -44,6 +44,8 @@ export interface Manifest {
   packs: Pack[];
   attribution: {
     ogl: string;
+    /** Open Government Licence – Yukon; present when a Yukon pack is offered. */
+    oglYukon?: string;
     osm: string;
   };
 }
@@ -72,6 +74,7 @@ export const BUNDLED_MANIFEST: Manifest = {
   baseUrl: MANIFEST_BASE_URL,
   attribution: {
     ogl: "Contains information licensed under the Open Government Licence – British Columbia",
+    oglYukon: "Contains information licensed under the Open Government Licence – Yukon",
     osm: "© OpenStreetMap contributors (ODbL)",
   },
   packs: [
@@ -97,6 +100,20 @@ export const BUNDLED_MANIFEST: Manifest = {
     region("skeena", "Skeena", [-133.5, 52.5, -126.0, 56.5]),
     region("northwest", "Northwest", [-139.1, 56.0, -126.0, 60.0]),
     region("northeast", "Northeast", [-126.0, 54.0, -119.9, 60.0]),
+    {
+      // Yukon is built from Yukon sources (not clipped from BC), so it has only
+      // the three layers we can source there: basemap (OSM), terrain, and crown
+      // (GeoYukon Land_Dispositions, OGL–Yukon). No BC-only VRI/OGMA/tenures.
+      id: "yukon",
+      name: "Yukon",
+      description: "Yukon pack. Basemap + hillshade + Crown land dispositions (OGL–Yukon).",
+      bbox: [-141.0, 60.0, -123.8, 69.7],
+      archives: {
+        basemap: placeholderArchive("basemap-yukon.pmtiles", 0),
+        crown: placeholderArchive("crown-yukon.pmtiles", 0),
+        terrain: placeholderArchive("terrain-yukon.pmtiles", 0),
+      },
+    },
     {
       id: "whole-bc",
       name: "Whole British Columbia",

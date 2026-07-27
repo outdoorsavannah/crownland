@@ -86,12 +86,15 @@ REGIONS = [
     ("skeena",           "Skeena",                   [-133.5, 52.5, -126.0, 56.5]),
     ("northwest",        "Northwest",                [-139.1, 56.0, -126.0, 60.0]),
     ("northeast",        "Northeast",                [-126.0, 54.0, -119.9, 60.0]),
+    ("yukon",            "Yukon",                    [-141.0, 60.0, -123.8, 69.7]),
 ]
 for rid, name, bbox in REGIONS:
     a = archives_for(regions_dir, rid)
     if a:
-        packs.append({"id": rid, "name": name,
-                      "description": "Region pack. Basemap + crown + tenures + old growth.",
+        desc = ("Yukon pack. Basemap + hillshade + Crown land dispositions (OGL–Yukon)."
+                if rid == "yukon"
+                else "Region pack. Basemap + crown + tenures + old growth.")
+        packs.append({"id": rid, "name": name, "description": desc,
                       "bbox": bbox, "archives": a})
 
 # 3. Whole-BC pack, if built.
@@ -111,6 +114,7 @@ manifest = {
     "baseUrl": base_url,
     "attribution": {
         "ogl": "Contains information licensed under the Open Government Licence – British Columbia",
+        "oglYukon": "Contains information licensed under the Open Government Licence – Yukon",
         "osm": "© OpenStreetMap contributors (ODbL)",
     },
     "packs": packs,

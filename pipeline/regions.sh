@@ -18,11 +18,19 @@ REGIONS=(
   "northeast        -126.0 54.0 -119.9 60.0"
 )
 
+# Regions whose layers are NOT clipped from the whole-BC archives — they are
+# built directly from their own sources (see build_yukon.sh). Kept OUT of
+# REGIONS so make_region_packs.sh / build_region.sh (which clip from whole-BC,
+# and whose data stops at 60N) never overwrite them with empty tiles.
+EXTRA_REGIONS=(
+  "yukon            -141.0 60.0 -123.8 69.7"
+)
+
 # region_bbox <id>  ->  prints "west south east north" (space-separated), or
 # exits non-zero if the id is unknown. Use with: read -r w s e n < <(region_bbox skeena)
 region_bbox() {
   local want="$1" id w s e n
-  for row in "${REGIONS[@]}"; do
+  for row in "${REGIONS[@]}" "${EXTRA_REGIONS[@]}"; do
     read -r id w s e n <<< "$row"
     if [[ "$id" == "$want" ]]; then
       printf '%s %s %s %s\n' "$w" "$s" "$e" "$n"

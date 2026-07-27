@@ -94,6 +94,7 @@ export async function showDownloadScreen(
     "Not authoritative for legal boundaries — for reference only. " +
     manifest.attribution.ogl +
     ". " +
+    (manifest.attribution.oglYukon ? manifest.attribution.oglYukon + ". " : "") +
     manifest.attribution.osm +
     ".";
   screen.append(disc);

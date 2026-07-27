@@ -28,6 +28,7 @@ export function openInfoPanel(manifest: Manifest, onSwitchPacks?: () => void): v
 
   sheet.body.append(
     p(manifest.attribution.ogl),
+    ...(manifest.attribution.oglYukon ? [p(manifest.attribution.oglYukon)] : []),
     p(manifest.attribution.osm),
     p(
       "Big trees: BC BigTree Registry, UBC Faculty of Forestry " +
