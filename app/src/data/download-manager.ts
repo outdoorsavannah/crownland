@@ -8,8 +8,9 @@ import {
   type Pack,
   type ArchiveEntry,
 } from "./manifest";
-import { archivePath, ensurePacksDir, deleteArchive } from "./storage";
+import { archivePath, archiveUrl, ensurePacksDir, deleteArchive } from "./storage";
 import { resumeDecision } from "./resume";
+import { Sha256 } from "./sha256";
 
 // First-run data download (spec §8): manifest fetch + region packs + resume +
 // checksum verification + version tracking.
@@ -309,13 +310,25 @@ export async function verifyArchive(entry: ArchiveEntry): Promise<boolean> {
   if (!entry.sha256) return true; // nothing to verify against (dev)
   if (!isNative) return true;
   try {
-    const { data } = await Filesystem.readFile({
-      directory: Directory.Data,
-      path: archivePath(entry.file),
-    });
-    const bytes = base64ToBytes(data as string);
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
-    return bufToHex(digest) === entry.sha256.toLowerCase();
+    // Hash the on-disk file in bounded Range-read windows so we never hold more
+    // than one CHUNK in memory. Filesystem.readFile returns the WHOLE file as
+    // base64, which OOM-crashes on large packs (a 402 MB archive needs a ~3 GB
+    // buffer). This reuses the same local-file Range fetch the pmtiles renderer
+    // relies on (storage.ts), fed into a streaming SHA-256.
+    const url = await archiveUrl(entry.file);
+    const size = await partialSize(entry.file);
+    if (size === 0) return false;
+    const hasher = new Sha256();
+    for (let off = 0; off < size; ) {
+      const end = Math.min(off + CHUNK, size); // Range end is inclusive
+      const res = await fetch(url, { headers: { Range: `bytes=${off}-${end - 1}` } });
+      if (!res.ok && res.status !== 206) return false;
+      const buf = new Uint8Array(await res.arrayBuffer());
+      if (buf.byteLength === 0) return false; // no progress — avoid infinite loop
+      hasher.update(buf);
+      off += buf.byteLength; // advance by bytes actually returned
+    }
+    return hasher.hex() === entry.sha256.toLowerCase();
   } catch {
     return false;
   }
@@ -377,13 +390,3 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
-  const bin = atob(b64);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-
-function bufToHex(buf: ArrayBuffer): string {
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
